@@ -27,7 +27,7 @@ export default function DashboardBanner() {
         <CardContent>
           <div className="text-muted-foreground">
             <div>
-              Raiders must maintain 40%+ large raid attendance over the last 6 lockout weeks
+              Raiders must maintain 50%+ large raid attendance over the last 6 lockout weeks
               to roll on{" "}
               <Link
                 href={loot_prio_url}
@@ -36,7 +36,7 @@ export default function DashboardBanner() {
               >
                 specific Naxx gear
               </Link>
-              . On March 25th, this will increase to 50%.
+              .
             </div>
             <div>
               In practice, this means raiders must participate in ~2 different 40-player raids (in different zones) on average each week to stay eligible.

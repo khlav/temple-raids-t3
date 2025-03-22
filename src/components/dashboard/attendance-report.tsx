@@ -28,7 +28,7 @@ export function AttendanceReport({
 }: {
   currentUserCharacterId?: number;
 }) {
-  const attendanceThreshold = 0.4;
+  const attendanceThreshold = 0.5;
   const minDisplayThreshold = 0.1;
   const router = useRouter();
   const [chartAttendenceData, setChartAttendenceData] = React.useState<
