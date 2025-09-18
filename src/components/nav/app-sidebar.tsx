@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import {ModeToggle} from "@/components/ui/mode-toggle";
+import { ModeToggle } from "@/components/ui/mode-toggle";
 
 import {
   ChartBarSquareIcon,
@@ -18,46 +18,45 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import {auth} from "~/server/auth";
-import {AppSidebarLogin} from "~/components/nav/app-sidebar-login";
+import { auth } from "~/server/auth";
+import { AppSidebarLogin } from "~/components/nav/app-sidebar-login";
 import Image from "next/image";
-import {FilePlus, Users, ListRestart, ShieldCheck, Wand} from "lucide-react";
+import { FilePlus, Users, ListRestart, ShieldCheck, Wand } from "lucide-react";
 
 const coreItems = [
-  {title: "Dashboard", url: "/", icon: ChartBarSquareIcon},
-  {title: "Raids", url: "/raids", icon: MapIcon},
-  {title: "Raiding characters", url: "/characters", icon: UserGroupIcon},
-  {title: "Rare recipes & crafters", url: "/rare-recipes", icon: Wand},
-
+  { title: "🦄 Magic Dashboard", url: "/", icon: ChartBarSquareIcon },
+  { title: "🏰 Epic Raids", url: "/raids", icon: MapIcon },
+  { title: "👥 Hero Characters", url: "/characters", icon: UserGroupIcon },
+  { title: "✨ Sparkly Recipes", url: "/rare-recipes", icon: Wand },
 ];
 
-const raidManagerTitle = "Raid Manager";
+const raidManagerTitle = "🎮 Raid Boss Manager";
 const raidManagerLinks = [
-  {title: "Create new raid", url: "/raids/new", icon: FilePlus},
+  { title: "🚀 Launch Epic Raid", url: "/raids/new", icon: FilePlus },
   {
-    title: "Manage mains v. alts",
+    title: "⚔️ Hero vs Sidekick Manager",
     url: "/raid-manager/characters",
     icon: Users,
   },
   {
-    title: "Refresh WCL log",
+    title: "🔄 Refresh Magic Logs",
     url: "/raid-manager/log-refresh",
     icon: ListRestart,
   },
 ];
 
-const adminSectionTitle = "Admin Panel";
+const adminSectionTitle = "👑 Royal Admin Panel";
 const adminLinks = [
   {
-    title: "User permissions",
+    title: "🛡️ Permission Wizard",
     url: "/admin/user-management",
     icon: ShieldCheck,
-  }
+  },
 ];
 
 export async function AppSidebar({
-                                   ...props
-                                 }: React.ComponentProps<typeof Sidebar>) {
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
   const session = await auth();
 
   return (
@@ -73,9 +72,8 @@ export async function AppSidebar({
               className="rounded-xl"
               priority
             />
-            <div
-              className="overflow-hidden whitespace-nowrap px-1 py-2 text-center font-bold group-data-[collapsible=icon]:hidden">
-              TempleAshkandi.com
+            <div className="overflow-hidden whitespace-nowrap px-1 py-2 text-center font-bold group-data-[collapsible=icon]:hidden">
+              🏛️ TempleAshkandi.com
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -83,7 +81,7 @@ export async function AppSidebar({
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <AppSidebarLogin session={session}/>
+            <AppSidebarLogin session={session} />
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
@@ -93,7 +91,7 @@ export async function AppSidebar({
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link href={item.url}>
-                      <item.icon/>
+                      <item.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -111,7 +109,7 @@ export async function AppSidebar({
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <Link href={item.url}>
-                        <item.icon/>
+                        <item.icon />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -130,7 +128,7 @@ export async function AppSidebar({
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <Link href={item.url}>
-                        <item.icon/>
+                        <item.icon />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -143,7 +141,7 @@ export async function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         <div className="m-auto">
-          <ModeToggle/>
+          <ModeToggle />
         </div>
       </SidebarFooter>
     </Sidebar>
