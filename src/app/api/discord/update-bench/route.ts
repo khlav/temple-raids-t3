@@ -110,12 +110,23 @@ export async function POST(request: Request) {
       );
 
     const matchedCharacterIds = matchedCharacters.map((c) => c.characterId);
-    const matchedNames = matchedCharacters.map((c) => c.name);
+
+    // Helper function to normalize strings (remove accents and lowercase)
+    const normalizeString = (str: string): string => {
+      return str
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    };
+
+    // Create a set of normalized matched names for efficient lookup
+    const normalizedMatchedNames = new Set(
+      matchedCharacters.map((c) => normalizeString(c.name)),
+    );
+
+    // Find unmatched names using the same normalization
     const unmatchedNames = characterNames.filter(
-      (name) =>
-        !matchedNames.some(
-          (matched) => matched.toLowerCase() === name.toLowerCase(),
-        ),
+      (name) => !normalizedMatchedNames.has(normalizeString(name)),
     );
 
     // 5. Create tRPC caller with user session
