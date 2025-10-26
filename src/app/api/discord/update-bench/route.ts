@@ -4,6 +4,7 @@ import { users, accounts, characters } from "~/server/db/schema";
 import { eq, and, or, sql } from "drizzle-orm";
 import { env } from "~/env.js";
 import { createCaller } from "~/server/api/root";
+import { getBaseUrl } from "~/lib/get-base-url";
 
 export async function POST(request: Request) {
   try {
@@ -160,7 +161,7 @@ export async function POST(request: Request) {
       success: true,
       raidId: raidDetails.raidId,
       raidName: raidDetails.name,
-      raidUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.templeashkandi.com"}/raids/${raidDetails.raidId}`,
+      raidUrl: `${getBaseUrl(request)}/raids/${raidDetails.raidId}`,
       matchedCharacters: matchedCharacters,
       unmatchedNames,
       totalBenchCharacters: benchResult.length,
