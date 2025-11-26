@@ -30,6 +30,7 @@ export interface SoftResRaidData {
   raidId: string;
   edition: string;
   instance: string | null; // e.g., "aq40", "bwl", "mc", "naxxramas" (can be null)
+  instances?: string[]; // Array of instance identifiers (e.g., ["naxxramas"])
   discord: boolean;
   discordId?: string;
   discordInvite?: string | null;

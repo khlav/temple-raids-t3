@@ -98,7 +98,15 @@ export const softres = createTRPCRouter({
       const softresData = await fetchSoftResRaidData(raidId);
 
       // Map instance to database zone
-      const zone = mapSoftResInstanceToDb(softresData.instance);
+      // Try instance first, then check instances array if instance is null
+      let zone = mapSoftResInstanceToDb(softresData.instance);
+      if (!zone && softresData.instances && softresData.instances.length > 0) {
+        // Try each instance in the array until we find a match
+        for (const instance of softresData.instances) {
+          zone = mapSoftResInstanceToDb(instance);
+          if (zone) break;
+        }
+      }
 
       // Pre-load item mappings - use all items if zone is unknown
       const zoneItems = zone
