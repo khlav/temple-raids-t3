@@ -218,6 +218,28 @@ export async function getAllItemsForZone(
 }
 
 /**
+ * Load all items from all instances
+ * Returns a Record mapping item ID to ItemMapping for all items across all zones
+ * Useful when zone/instance is unknown
+ */
+export async function getAllItems(): Promise<Record<number, ItemMapping>> {
+  const allItems: Record<number, ItemMapping> = {};
+
+  // Load all instances in parallel
+  const instancePromises = ITEM_INSTANCES.map((instance) =>
+    loadInstanceItems(instance),
+  );
+  const instanceResults = await Promise.all(instancePromises);
+
+  // Merge all items into a single object
+  for (const items of instanceResults) {
+    Object.assign(allItems, items);
+  }
+
+  return allItems;
+}
+
+/**
  * Clear the cache (useful for testing or memory management)
  */
 export function clearItemCache(): void {
