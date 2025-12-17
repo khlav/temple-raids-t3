@@ -29,6 +29,7 @@ export const EQUIP_SLOTS = [
   "Held In Off-hand",
   "Legs",
   "Main Hand",
+  "Miscellaneous",
   "Neck",
   "Off Hand",
   "One-Hand",
@@ -71,7 +72,6 @@ export interface ItemMapping {
   name: string;
   equipslot: EquipSlot;
   quality: ItemQuality;
-  ilvl: number;
   from: string;
   instance: ItemInstance;
 }

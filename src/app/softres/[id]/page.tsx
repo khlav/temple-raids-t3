@@ -53,7 +53,12 @@ export default async function SoftResScanResultPage({
         <div className="mb-4 text-sm text-muted-foreground">
           Checks characters and their soft reserves against attendance
           constraints and other rules + information.
+          <span className="block mt-1 text-amber-600 dark:text-amber-400">
+            ⚠️ Note: Attendance values are <strong>current attendance</strong>{" "}
+            and may not be accurate for older raids.
+          </span>
         </div>
+
         <Suspense fallback={<SoftResScanSkeleton />}>
           <SoftResScanContentServer raidId={raidId} />
         </Suspense>

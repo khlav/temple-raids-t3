@@ -19,7 +19,7 @@ import { getSpecNameById } from "~/lib/class-specs";
 
 export interface SoftResScanResult {
   characterId: number | null; // null for unmatched characters
-  characterName: string;
+  characterName: string; // SoftRes name
   characterClass: string;
   primaryCharacterId: number | null;
   primaryCharacterName: string | null;
@@ -31,9 +31,9 @@ export interface SoftResScanResult {
   matchingRules: Array<{
     id: string;
     name: string;
-    level: "info" | "warning" | "error";
+    description: string;
+    level: "info" | "highlight" | "warning" | "error";
     icon: string;
-    color: string;
   }>;
   stats: {
     totalRaidsAttendedBenched: number;
@@ -214,26 +214,42 @@ export const softres = createTRPCRouter({
           zoneRaidsAttendedBenched: data.stats.zoneRaidsAttendedBenched,
           primaryAttendancePct: data.stats.primaryAttendancePct,
           srItems: data.reservedChar.items,
+          srItemNames: new Map(
+            data.srItems
+              .map((item) => [item.itemId, item.itemName ?? undefined])
+              .filter(([_, name]) => name !== undefined) as Array<
+              [number, string]
+            >,
+          ),
           zone: zone ?? null,
         };
 
         // Evaluate all rules
         const matchingRules = getMatchingRules(evalContext);
 
+        // Sort rules by priority: error > warning > highlight > info
+        const severityOrder = { error: 4, warning: 3, highlight: 2, info: 1 } as const;
+        const sortedRules = [...matchingRules].sort(
+          (a, b) => severityOrder[b.level] - severityOrder[a.level],
+        );
+
         results.push({
           characterId: data.stats.characterId,
-          characterName: data.stats.characterName,
-          characterClass: data.stats.characterClass,
+          characterName: data.reservedChar.name, // SoftRes name (main display)
+          characterClass: data.reservedChar.class, // Use SoftRes class, not database class
           primaryCharacterId: data.stats.primaryCharacterId,
-          primaryCharacterName: data.stats.primaryCharacterName,
+          primaryCharacterName: data.stats.primaryCharacterName, // Database primary character name (shown in parentheses)
           classDetail: data.classDetail,
           srItems: data.srItems,
-          matchingRules: matchingRules.map((rule) => ({
+          matchingRules: sortedRules.map((rule) => ({
             id: rule.id,
             name: rule.name,
+            description:
+              typeof rule.description === "function"
+                ? rule.description(evalContext)
+                : rule.description,
             level: rule.level,
             icon: rule.icon,
-            color: rule.color,
           })),
           stats: {
             totalRaidsAttendedBenched: data.stats.totalRaidsAttendedBenched,
@@ -256,11 +272,24 @@ export const softres = createTRPCRouter({
           zoneRaidsAttendedBenched: null,
           primaryAttendancePct: null,
           srItems: unmatchedChar.srItems.map((item) => item.itemId),
+          srItemNames: new Map(
+            unmatchedChar.srItems
+              .map((item) => [item.itemId, item.itemName ?? undefined])
+              .filter(([_, name]) => name !== undefined) as Array<
+              [number, string]
+            >,
+          ),
           zone: zone ?? null,
         };
 
-        // Evaluate all rules (will match "no-database-match" rule)
+        // Evaluate all rules (will match "New or unmatched raider" rule)
         const matchingRules = getMatchingRules(evalContext);
+
+        // Sort rules by priority: error > warning > highlight > info
+        const severityOrder = { error: 4, warning: 3, highlight: 2, info: 1 } as const;
+        const sortedRules = [...matchingRules].sort(
+          (a, b) => severityOrder[b.level] - severityOrder[a.level],
+        );
 
         results.push({
           characterId: null,
@@ -270,19 +299,22 @@ export const softres = createTRPCRouter({
           primaryCharacterName: null,
           classDetail: unmatchedChar.classDetail,
           srItems: unmatchedChar.srItems,
-          matchingRules: matchingRules.map((rule) => ({
+          matchingRules: sortedRules.map((rule) => ({
             id: rule.id,
             name: rule.name,
+            description:
+              typeof rule.description === "function"
+                ? rule.description(evalContext)
+                : rule.description,
             level: rule.level,
             icon: rule.icon,
-            color: rule.color,
           })),
           stats: null,
         });
       }
 
-      // Sort results by severity (error > warning > info), then by count of rules at that severity
-      const severityOrder = { error: 3, warning: 2, info: 1 } as const;
+      // Sort results by severity (error > warning > highlight > info), then by count of rules at that severity
+      const severityOrder = { error: 4, warning: 3, highlight: 2, info: 1 } as const;
 
       results.sort((a, b) => {
         // Get highest severity for each result

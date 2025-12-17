@@ -59,6 +59,15 @@ export async function matchCharactersBatch(
     .from(characters)
     .where(and(or(...nameConditions), eq(characters.isIgnored, false)));
 
+  // Helper function to normalize names (unaccent + lowercase)
+  // This matches what the SQL query does with f_unaccent
+  function normalizeName(name: string): string {
+    return name
+      .toLowerCase()
+      .normalize("NFD") // Decompose accented characters (ä -> a + ̈)
+      .replace(/[\u0300-\u036f]/g, ""); // Remove diacritical marks
+  }
+
   // Create a map for quick lookup: normalized name -> matches
   const matchesByNormalizedName = new Map<
     string,
@@ -71,7 +80,7 @@ export async function matchCharactersBatch(
   >();
 
   for (const match of allMatches) {
-    const normalizedName = match.name.toLowerCase();
+    const normalizedName = normalizeName(match.name);
     if (!matchesByNormalizedName.has(normalizedName)) {
       matchesByNormalizedName.set(normalizedName, []);
     }
@@ -82,7 +91,7 @@ export async function matchCharactersBatch(
   const result = new Map<string, number | null>();
 
   for (const softresChar of softresChars) {
-    const normalizedName = softresChar.name.toLowerCase();
+    const normalizedName = normalizeName(softresChar.name);
     const candidates = matchesByNormalizedName.get(normalizedName) ?? [];
 
     if (candidates.length === 0) {

@@ -24,8 +24,9 @@ export function CharacterLink({
   target = "_self",
   className,
 }: CharacterLinkProps) {
-  const displayName = primaryCharacterName ?? characterName;
-
+  // Match the format from characters-table.tsx:
+  // - characterName is the main display
+  // - primaryCharacterName (if exists) is shown in smaller muted text next to it (no parentheses)
   return (
     <Link
       className={`group flex w-full flex-row items-center transition-all hover:text-primary ${className ?? ""}`}
@@ -37,11 +38,13 @@ export function CharacterLink({
         px={iconSize}
         className="mr-1 grow-0"
       />
-      <div className="grow-0">{displayName}</div>
-      {primaryCharacterName && (
+      <div className="grow-0">{characterName}</div>
+      {primaryCharacterName ? (
         <div className="pl-1.5 text-xs font-normal text-muted-foreground">
-          {characterName}
+          {primaryCharacterName}
         </div>
+      ) : (
+        ""
       )}
     </Link>
   );
