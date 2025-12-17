@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -8,12 +9,20 @@ import { ReportParameterForm } from "~/components/reports/report-parameter-form"
 import { ReportVisualization } from "~/components/reports/report-visualization";
 import type { VisualizationType } from "~/lib/report-types";
 import { Skeleton } from "~/components/ui/skeleton";
+import { Link2, Check } from "lucide-react";
+import { useToast } from "~/hooks/use-toast";
 
 export function ReportBuilder() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { toast } = useToast();
+
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [parameters, setParameters] = useState<Record<string, unknown>>({});
   const [visualization, setVisualization] = useState<VisualizationType>("table");
   const [hasExecuted, setHasExecuted] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Fetch template list
   const { data: templates, isLoading: templatesLoading } = api.report.getTemplates.useQuery();
@@ -38,10 +47,39 @@ export function ReportBuilder() {
     { enabled: false } // Only execute when explicitly called
   );
 
+  // Load report from URL parameters on mount
+  useEffect(() => {
+    const templateId = searchParams.get("template");
+    const paramsEncoded = searchParams.get("params");
+    const viz = searchParams.get("viz") as VisualizationType;
+
+    if (templateId && paramsEncoded) {
+      try {
+        const decodedParams = JSON.parse(decodeURIComponent(paramsEncoded)) as Record<string, unknown>;
+        setSelectedTemplateId(templateId);
+        setParameters(decodedParams);
+        setVisualization(viz ?? "table");
+        setHasExecuted(true);
+        // The query will auto-execute because parameters are set
+      } catch (error) {
+        console.error("Failed to parse URL parameters:", error);
+      }
+    }
+  }, [searchParams]);
+
+  // Auto-execute when loaded from URL
+  useEffect(() => {
+    if (hasExecuted && selectedTemplateId && Object.keys(parameters).length > 0) {
+      void executeReport();
+    }
+  }, [hasExecuted, selectedTemplateId, parameters, executeReport]);
+
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplateId(templateId);
     setParameters({});
     setHasExecuted(false);
+    // Clear URL parameters when selecting new template
+    router.push(pathname);
   };
 
   const handleParametersChange = (newParams: Record<string, unknown>) => {
@@ -51,6 +89,39 @@ export function ReportBuilder() {
   const handleExecute = async () => {
     await executeReport();
     setHasExecuted(true);
+
+    // Update URL with report parameters
+    const params = new URLSearchParams();
+    params.set("template", selectedTemplateId!);
+    params.set("params", encodeURIComponent(JSON.stringify(parameters)));
+    params.set("viz", visualization);
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleCopyLink = async () => {
+    const params = new URLSearchParams();
+    params.set("template", selectedTemplateId!);
+    params.set("params", encodeURIComponent(JSON.stringify(parameters)));
+    params.set("viz", visualization);
+
+    const url = `${window.location.origin}${pathname}?${params.toString()}`;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      toast({
+        title: "Link copied!",
+        description: "Report link has been copied to clipboard",
+      });
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy link to clipboard",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -135,6 +206,24 @@ export function ReportBuilder() {
                       )}
                     </div>
                     <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopyLink}
+                        disabled={!reportData}
+                      >
+                        {linkCopied ? (
+                          <>
+                            <Check className="mr-2 h-4 w-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Link2 className="mr-2 h-4 w-4" />
+                            Copy Link
+                          </>
+                        )}
+                      </Button>
                       {template?.availableVisualizations.map((viz) => (
                         <Button
                           key={viz}
