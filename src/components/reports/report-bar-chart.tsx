@@ -18,7 +18,11 @@ interface ReportBarChartProps {
   parameters: Record<string, unknown>;
 }
 
-export function ReportBarChart({ data, template, parameters }: ReportBarChartProps) {
+export function ReportBarChart({
+  data,
+  template: _template,
+  parameters: _parameters,
+}: ReportBarChartProps) {
   if (!data || data.length === 0) {
     return <div className="text-muted-foreground">No data to display</div>;
   }

@@ -3,9 +3,19 @@
  * Translates report template configurations into Drizzle ORM queries
  */
 
-import { and, count, countDistinct, desc, eq, gte, inArray, lte, sql, sum, type SQL } from "drizzle-orm";
-import type { PgColumn } from "drizzle-orm/pg-core";
-import type { DB } from "~/server/db";
+import {
+  and,
+  countDistinct,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lte,
+  sql,
+  sum,
+  type SQL,
+} from "drizzle-orm";
+import type { db as dbInstance } from "~/server/db";
 import {
   characters,
   raids,
@@ -24,9 +34,9 @@ import type { ReportTemplate } from "~/lib/report-types";
  * @returns Query results
  */
 export async function buildAndExecuteQuery(
-  db: DB,
+  db: typeof dbInstance,
   template: ReportTemplate,
-  parameters: Record<string, unknown>
+  parameters: Record<string, unknown>,
 ): Promise<unknown[]> {
   // Route to template-specific query builders
   switch (template.id) {
@@ -43,8 +53,8 @@ export async function buildAndExecuteQuery(
  * Execute Character Attendance Report query
  */
 async function executeCharacterAttendanceReport(
-  db: DB,
-  parameters: Record<string, unknown>
+  db: typeof dbInstance,
+  parameters: Record<string, unknown>,
 ): Promise<unknown[]> {
   const dateRange = parameters.dateRange as { start: string; end: string };
   const characterType = (parameters.characterType as string) ?? "primary";
@@ -53,9 +63,7 @@ async function executeCharacterAttendanceReport(
   const groupByWeek = (parameters.groupByWeek as boolean) ?? false;
 
   // Build WHERE conditions
-  const conditions: SQL[] = [
-    eq(characters.isIgnored, false),
-  ];
+  const conditions: SQL[] = [eq(characters.isIgnored, false)];
 
   // Character type filter
   if (characterType === "primary") {
@@ -98,19 +106,16 @@ async function executeCharacterAttendanceReport(
       .from(characters)
       .leftJoin(
         raidLogAttendeeMap,
-        eq(characters.characterId, raidLogAttendeeMap.characterId)
+        eq(characters.characterId, raidLogAttendeeMap.characterId),
       )
-      .leftJoin(
-        raidLogs,
-        eq(raidLogAttendeeMap.raidLogId, raidLogs.raidLogId)
-      )
+      .leftJoin(raidLogs, eq(raidLogAttendeeMap.raidLogId, raidLogs.raidLogId))
       .leftJoin(raids, eq(raidLogs.raidId, raids.raidId))
       .where(and(...conditions))
       .groupBy(
         characters.characterId,
         characters.name,
         characters.class,
-        lockoutWeekSQL
+        lockoutWeekSQL,
       )
       .orderBy(characters.name, lockoutWeekSQL);
 
@@ -123,25 +128,24 @@ async function executeCharacterAttendanceReport(
         name: characters.name,
         class: characters.class,
         raidsAttended: countDistinct(raidLogAttendeeMap.raidLogId),
-        timesBenched: countDistinct(sql`CASE WHEN ${raidBenchMap.raidId} IS NOT NULL AND ${raids.raidId} = ${raidBenchMap.raidId} THEN ${raidBenchMap.raidId} END`),
+        timesBenched: countDistinct(
+          sql`CASE WHEN ${raidBenchMap.raidId} IS NOT NULL AND ${raids.raidId} = ${raidBenchMap.raidId} THEN ${raidBenchMap.raidId} END`,
+        ),
         weightedPoints: sum(raids.attendanceWeight),
       })
       .from(characters)
       .leftJoin(
         raidLogAttendeeMap,
-        eq(characters.characterId, raidLogAttendeeMap.characterId)
+        eq(characters.characterId, raidLogAttendeeMap.characterId),
       )
-      .leftJoin(
-        raidLogs,
-        eq(raidLogAttendeeMap.raidLogId, raidLogs.raidLogId)
-      )
+      .leftJoin(raidLogs, eq(raidLogAttendeeMap.raidLogId, raidLogs.raidLogId))
       .leftJoin(raids, eq(raidLogs.raidId, raids.raidId))
       .leftJoin(
         raidBenchMap,
         and(
           eq(characters.characterId, raidBenchMap.characterId),
-          eq(raids.raidId, raidBenchMap.raidId)
-        )
+          eq(raids.raidId, raidBenchMap.raidId),
+        ),
       )
       .where(and(...conditions))
       .groupBy(characters.characterId, characters.name, characters.class)
@@ -155,8 +159,8 @@ async function executeCharacterAttendanceReport(
  * Execute Compare Attendance Report query
  */
 async function executeCompareAttendanceReport(
-  db: DB,
-  parameters: Record<string, unknown>
+  db: typeof dbInstance,
+  parameters: Record<string, unknown>,
 ): Promise<unknown[]> {
   const dateRange = parameters.dateRange as { start: string; end: string };
   const characterIds = parameters.characterIds as number[] | undefined;
@@ -207,19 +211,16 @@ async function executeCompareAttendanceReport(
       .from(characters)
       .innerJoin(
         raidLogAttendeeMap,
-        eq(characters.characterId, raidLogAttendeeMap.characterId)
+        eq(characters.characterId, raidLogAttendeeMap.characterId),
       )
-      .innerJoin(
-        raidLogs,
-        eq(raidLogAttendeeMap.raidLogId, raidLogs.raidLogId)
-      )
+      .innerJoin(raidLogs, eq(raidLogAttendeeMap.raidLogId, raidLogs.raidLogId))
       .innerJoin(raids, eq(raidLogs.raidId, raids.raidId))
       .where(and(...conditions))
       .groupBy(
         characters.characterId,
         characters.name,
         characters.class,
-        lockoutWeekSQL
+        lockoutWeekSQL,
       )
       .orderBy(characters.name, lockoutWeekSQL);
 
@@ -238,19 +239,16 @@ async function executeCompareAttendanceReport(
       .from(characters)
       .innerJoin(
         raidLogAttendeeMap,
-        eq(characters.characterId, raidLogAttendeeMap.characterId)
+        eq(characters.characterId, raidLogAttendeeMap.characterId),
       )
-      .innerJoin(
-        raidLogs,
-        eq(raidLogAttendeeMap.raidLogId, raidLogs.raidLogId)
-      )
+      .innerJoin(raidLogs, eq(raidLogAttendeeMap.raidLogId, raidLogs.raidLogId))
       .innerJoin(raids, eq(raidLogs.raidId, raids.raidId))
       .where(and(...conditions))
       .groupBy(
         characters.characterId,
         characters.name,
         characters.class,
-        raids.zone
+        raids.zone,
       )
       .orderBy(characters.name, raids.zone);
 

@@ -40,9 +40,9 @@ export const report = createTRPCRouter({
     .input(
       z.object({
         templateId: z.string(),
-        parameters: z.record(z.unknown()),
+        parameters: z.record(z.string(), z.unknown()),
         visualization: z.enum(["table", "bar", "line"]),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const startTime = Date.now();
@@ -57,7 +57,7 @@ export const report = createTRPCRouter({
       const data = await buildAndExecuteQuery(
         ctx.db,
         template,
-        input.parameters
+        input.parameters,
       );
 
       // Apply pivot transformation if requested
@@ -71,7 +71,7 @@ export const report = createTRPCRouter({
           data as Array<Record<string, unknown>>,
           "name",
           "lockoutWeekStart",
-          "raidsAttended"
+          "raidsAttended",
         );
       }
 
@@ -96,8 +96,8 @@ export const report = createTRPCRouter({
     .input(
       z.object({
         templateId: z.string(),
-        parameters: z.record(z.unknown()),
-      })
+        parameters: z.record(z.string(), z.unknown()),
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       // Get template
@@ -110,7 +110,7 @@ export const report = createTRPCRouter({
       const data = await buildAndExecuteQuery(
         ctx.db,
         template,
-        input.parameters
+        input.parameters,
       );
 
       // Apply pivot transformation if requested
@@ -123,12 +123,14 @@ export const report = createTRPCRouter({
           data as Array<Record<string, unknown>>,
           "name",
           "lockoutWeekStart",
-          "raidsAttended"
+          "raidsAttended",
         );
       }
 
       // Convert to CSV
-      const csv = convertToCSV(transformedData as Array<Record<string, unknown>>);
+      const csv = convertToCSV(
+        transformedData as Array<Record<string, unknown>>,
+      );
 
       return csv;
     }),
