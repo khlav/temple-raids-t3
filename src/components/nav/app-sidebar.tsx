@@ -21,7 +21,7 @@ import Link from "next/link";
 import { auth } from "~/server/auth";
 import { AppSidebarLogin } from "~/components/nav/app-sidebar-login";
 import Image from "next/image";
-import { FilePlus, Users, ListRestart, ShieldCheck, Wand } from "lucide-react";
+import { FilePlus, Users, ListRestart, ShieldCheck, Wand, BarChart3 } from "lucide-react";
 import { SidebarSearchBox } from "~/components/nav/sidebar-search-box";
 
 const coreItems = [
@@ -43,6 +43,11 @@ const raidManagerLinks = [
     title: "Refresh WCL log",
     url: "/raid-manager/log-refresh",
     icon: ListRestart,
+  },
+  {
+    title: "Reports",
+    url: "/raid-manager/reports",
+    icon: BarChart3,
   },
 ];
 
