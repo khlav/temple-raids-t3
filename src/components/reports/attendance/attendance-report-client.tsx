@@ -9,7 +9,7 @@ import { ZoneFilter } from "./zone-filter";
 import { DayOfWeekFilter } from "./day-of-week-filter";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { Share2 } from "lucide-react";
+import { Share2, Swords } from "lucide-react";
 import { useToast } from "~/hooks/use-toast";
 
 const DEFAULT_ZONES = ["naxxramas", "aq40", "mc", "bwl"];
@@ -212,7 +212,7 @@ export function AttendanceReportClient({
   return (
     <div className="space-y-3">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-2">
         <DateRangeFilter
           startDate={filters.startDate}
           endDate={filters.endDate}
@@ -237,38 +237,48 @@ export function AttendanceReportClient({
           }
         />
 
-        <div className="flex items-center gap-1 rounded-md border p-1">
-          <Button
-            variant={filters.displayMode === "icons" ? "default" : "ghost"}
-            size="sm"
-            className="h-7 px-3 text-xs"
-            onClick={() =>
-              setFilters((prev) => ({ ...prev, displayMode: "icons" }))
-            }
-          >
-            Icons
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={handleShareUrl}>
+            <Share2 className="h-4 w-4" />
           </Button>
-          <Button
-            variant={filters.displayMode === "names" ? "default" : "ghost"}
-            size="sm"
-            className="h-7 px-3 text-xs"
-            onClick={() =>
-              setFilters((prev) => ({ ...prev, displayMode: "names" }))
-            }
-          >
-            Names
-          </Button>
-        </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleShareUrl}
-          className="ml-auto"
-        >
-          <Share2 className="mr-2 h-4 w-4" />
-          Share Report
-        </Button>
+          <div className="flex items-center gap-1 rounded-md border p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-7 px-3 text-xs ${
+                filters.displayMode === "icons"
+                  ? "bg-chart-2/10 text-chart-2"
+                  : ""
+              }`}
+              onClick={() =>
+                setFilters((prev) => ({ ...prev, displayMode: "icons" }))
+              }
+            >
+              <Swords
+                className={`h-3.5 w-3.5 ${
+                  filters.displayMode === "icons"
+                    ? "text-chart-2"
+                    : "text-muted-foreground"
+                }`}
+              />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-7 px-3 text-xs ${
+                filters.displayMode === "names"
+                  ? "bg-chart-2/10 text-chart-2"
+                  : ""
+              }`}
+              onClick={() =>
+                setFilters((prev) => ({ ...prev, displayMode: "names" }))
+              }
+            >
+              Names
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Main Table */}
