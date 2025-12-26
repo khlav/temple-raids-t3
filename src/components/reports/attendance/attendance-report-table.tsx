@@ -129,10 +129,17 @@ export function AttendanceReportTable({
                         raid.raidId,
                         char.characterId,
                       );
+                      // Add background color based on status
+                      const bgClass =
+                        status === "attendee"
+                          ? "bg-chart-2/20"
+                          : status === "bench"
+                            ? "bg-muted-foreground/20"
+                            : "";
                       return (
                         <td
                           key={char.characterId}
-                          className="min-w-[150px] max-w-[300px] p-2 text-center align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]"
+                          className={`min-w-[150px] max-w-[300px] p-2 text-center align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] ${bgClass}`}
                         >
                           <AttendanceStatusIcon
                             status={status}
