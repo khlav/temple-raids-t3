@@ -20,6 +20,7 @@ interface ReportFilters {
   zones: string[];
   daysOfWeek: string[];
   characterIds: number[];
+  displayMode: "icons" | "names";
 }
 
 // Helper to parse URL params into filter state
@@ -35,6 +36,11 @@ function parseUrlParams(
   const urlCharacters =
     searchParams.get("characters")?.split(",").map(Number).filter(Boolean) ||
     [];
+  const urlDisplayMode = searchParams.get("displayMode");
+  const displayMode =
+    urlDisplayMode === "names" || urlDisplayMode === "icons"
+      ? urlDisplayMode
+      : "icons";
 
   return {
     startDate: urlStartDate,
@@ -47,6 +53,7 @@ function parseUrlParams(
         : defaultCharacterId
           ? [defaultCharacterId]
           : [],
+    displayMode,
   };
 }
 
@@ -60,6 +67,8 @@ function buildUrlParams(filters: ReportFilters): URLSearchParams {
     params.set("days", filters.daysOfWeek.join(","));
   if (filters.characterIds.length > 0)
     params.set("characters", filters.characterIds.join(","));
+  if (filters.displayMode !== "icons")
+    params.set("displayMode", filters.displayMode);
   return params;
 }
 
@@ -73,7 +82,8 @@ function filtersEqual(a: ReportFilters, b: ReportFilters): boolean {
     a.daysOfWeek.length === b.daysOfWeek.length &&
     a.daysOfWeek.every((d) => b.daysOfWeek.includes(d)) &&
     a.characterIds.length === b.characterIds.length &&
-    a.characterIds.every((c) => b.characterIds.includes(c))
+    a.characterIds.every((c) => b.characterIds.includes(c)) &&
+    a.displayMode === b.displayMode
   );
 }
 
@@ -227,6 +237,29 @@ export function AttendanceReportClient({
           }
         />
 
+        <div className="flex items-center gap-1 rounded-md border p-1">
+          <Button
+            variant={filters.displayMode === "icons" ? "default" : "ghost"}
+            size="sm"
+            className="h-7 px-3 text-xs"
+            onClick={() =>
+              setFilters((prev) => ({ ...prev, displayMode: "icons" }))
+            }
+          >
+            Icons
+          </Button>
+          <Button
+            variant={filters.displayMode === "names" ? "default" : "ghost"}
+            size="sm"
+            className="h-7 px-3 text-xs"
+            onClick={() =>
+              setFilters((prev) => ({ ...prev, displayMode: "names" }))
+            }
+          >
+            Names
+          </Button>
+        </div>
+
         <Button
           variant="outline"
           size="sm"
@@ -245,6 +278,7 @@ export function AttendanceReportClient({
           characters={data.characters}
           attendance={data.attendance}
           selectedCharacterIds={filters.characterIds}
+          displayMode={filters.displayMode}
           onAddCharacter={handleAddCharacter}
           onRemoveCharacter={handleRemoveCharacter}
         />
