@@ -9,7 +9,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, InfoIcon } from "lucide-react";
 
 export default function DashboardBanner({ session }: { session?: Session }) {
   const loot_prio_url =
@@ -38,7 +38,8 @@ export default function DashboardBanner({ session }: { session?: Session }) {
             >
               <div className="flex flex-row items-center gap-2">
                 <div className="grow-0 font-bold text-primary">
-                  Please Read: Temple Raid Attendance & Loot Policy
+                  Please Read <InfoIcon className="inline h-4 w-4" /> Temple
+                  Raid Attendance & Loot Policy
                 </div>
                 <ChevronDown
                   className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${

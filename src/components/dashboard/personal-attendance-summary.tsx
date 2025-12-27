@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { Skeleton } from "~/components/ui/skeleton";
+import { ClassIcon } from "~/components/ui/class-icon";
 
 // Format date as mm/dd
 function formatDateMMDD(dateString: string): string {
@@ -58,28 +59,51 @@ export function PersonalAttendanceSummary({
     api.dashboard.getPrimaryRaidAttendanceL6LockoutWk.useQuery();
   const { data: heatmapData, isLoading: isLoadingHeatmap } =
     api.dashboard.getPersonalAttendanceHeatmap.useQuery();
+  const { data: characterData } = api.character.getCharacterById.useQuery(
+    currentUserCharacterId ?? -1,
+    { enabled: !!currentUserCharacterId },
+  );
 
-  // Get character name for title
+  // Get character name and class for title
   const getTitle = () => {
     if (!currentUserSession?.user) {
-      return "Your Attendance";
+      return { characterName: null, characterClass: undefined };
     }
     if (!currentUserCharacterId) {
-      return "Your Attendance";
+      return { characterName: null, characterClass: undefined };
     }
     const userAttendance = attendanceData?.find(
       (raider) => raider.characterId === currentUserCharacterId,
     );
     const characterName = userAttendance?.name;
-    return characterName ? `${characterName}'s Attendance` : "Your Attendance";
+    const characterClass = characterData?.class;
+
+    if (!characterName) {
+      return { characterName: null, characterClass: undefined };
+    }
+
+    return { characterName, characterClass };
   };
+
+  const titleData = getTitle();
+  const titleClass = titleData.characterClass;
 
   // No session state
   if (!currentUserSession?.user) {
     return (
       <Card>
         <CardHeader>
-          <div>{getTitle()}</div>
+          <div className="flex items-center gap-2">
+            {titleClass && <ClassIcon characterClass={titleClass} px={20} />}
+            {titleData.characterName ? (
+              <span>
+                <span className="font-bold">{titleData.characterName}</span> —
+                Raid Attendance, Last 6 lockouts
+              </span>
+            ) : (
+              <span>Raid Attendance, Last 6 lockouts</span>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-4 py-4">
@@ -118,7 +142,17 @@ export function PersonalAttendanceSummary({
     return (
       <Card>
         <CardHeader>
-          <div>{getTitle()}</div>
+          <div className="flex items-center gap-2">
+            {titleClass && <ClassIcon characterClass={titleClass} px={20} />}
+            {titleData.characterName ? (
+              <span>
+                <span className="font-bold">{titleData.characterName}</span> —
+                Raid Attendance, Last 6 lockouts
+              </span>
+            ) : (
+              <span>Raid Attendance, Last 6 lockouts</span>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-4 py-4">
@@ -241,7 +275,17 @@ export function PersonalAttendanceSummary({
   return (
     <Card>
       <CardHeader>
-        <div>{getTitle()}</div>
+        <div className="flex items-center gap-1">
+          {titleClass && <ClassIcon characterClass={titleClass} px={20} />}
+          {titleData.characterName ? (
+            <span>
+              <span className="font-bold">{titleData.characterName}</span> —
+              Raid Attendance, Last 6 lockouts
+            </span>
+          ) : (
+            <span>Raid Attendance, Last 6 lockouts</span>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Progress Bar */}
