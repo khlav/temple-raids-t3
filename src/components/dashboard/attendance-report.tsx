@@ -92,10 +92,6 @@ export function AttendanceReport({
                   : raider.isEligible
                     ? "bg-primary"
                     : "bg-gray-400";
-                // 50% line: match background when >=50%, light gray when <50%
-                const referenceLineColor = raider.isEligible
-                  ? "border-background"
-                  : "border-muted-foreground";
 
                 return (
                   <div
@@ -106,11 +102,12 @@ export function AttendanceReport({
                     {/* Character Name */}
                     <div
                       className={cn(
-                        "whitespace-nowrap text-right text-xs leading-tight transition-opacity group-hover:opacity-80",
+                        "flex items-center justify-end whitespace-nowrap text-right text-xs leading-tight transition-opacity group-hover:opacity-80",
                         isHighlighted
                           ? "font-bold text-chart-2"
                           : "text-muted-foreground",
                       )}
+                      style={{ height: "1rem" }}
                     >
                       {raider.name ?? "Unknown"}
                     </div>
@@ -119,43 +116,36 @@ export function AttendanceReport({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="relative min-w-0 transition-opacity group-hover:opacity-80">
-                          {/* 50% Reference Line - only show if < 50% */}
-                          {!raider.isEligible && (
-                            <div
-                              className={cn(
-                                "pointer-events-none absolute left-[50%] top-0 z-10 h-4 border-l-2 border-dotted",
-                                referenceLineColor,
-                              )}
-                            />
-                          )}
-
                           <Progress
                             value={raider.attendancePercent}
                             className="h-4 bg-muted"
                             indicatorClassName={cn("rounded-full", barColor)}
                           />
 
+                          {/* 50% Reference Line - always displayed */}
+                          <div className="pointer-events-none absolute left-[50%] top-0 z-[1] h-4 border-l-2 border-dotted border-foreground/40" />
+
                           {/* Percentage Label */}
                           {raider.attendancePercent > 0 && (
                             <div
                               className={cn(
-                                "pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-xs font-bold",
+                                "pointer-events-none absolute top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xs font-bold",
                                 isHighlighted
-                                  ? raider.isEligible
+                                  ? raider.attendancePercent >= 20
                                     ? "text-background"
                                     : "text-chart-2"
-                                  : raider.isEligible
+                                  : raider.attendancePercent >= 20
                                     ? "text-primary-foreground"
                                     : "text-muted-foreground",
                               )}
                               style={
-                                raider.isEligible
+                                raider.attendancePercent >= 20
                                   ? {
-                                      // >= 50%: inside the end of filled bar, evenly spaced from right edge
-                                      right: `${100 - raider.attendancePercent + 2}%`,
+                                      // >= 20%: inside the end of filled bar, evenly spaced from right edge
+                                      right: `${100 - raider.attendancePercent + 1.5}%`,
                                     }
                                   : {
-                                      // < 50%: outside filled end, evenly spaced from right edge of fill
+                                      // < 20%: outside filled end, evenly spaced from right edge of fill
                                       left: `${raider.attendancePercent + 2}%`,
                                     }
                               }
