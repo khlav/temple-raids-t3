@@ -289,11 +289,13 @@ export function PersonalAttendanceSummary({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Progress Bar */}
-        <div className="-mt-4 space-y-2">
+        <div className="-mt-4">
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex cursor-help items-center gap-2">
-                <span className="text-2xl font-bold">{attendancePercent}%</span>
+                <span className="text-2xl font-bold leading-none">
+                  {attendancePercent}%
+                </span>
                 <div className="relative flex-1">
                   <div className="h-4 w-full rounded-full bg-muted">
                     <div
@@ -316,6 +318,31 @@ export function PersonalAttendanceSummary({
               </div>
             </TooltipContent>
           </Tooltip>
+          <div className="mt-[1px] flex justify-end text-xs text-muted-foreground">
+            {isAboveThreshold ? (
+              <span>
+                <span className="text-chart-2">Eligible</span> for{" "}
+                <Link
+                  href="https://docs.google.com/spreadsheets/d/1OBcFgT1AXiPL3eW7x3yUx6EjsopPLlFMclph2OGRkXU/edit?gid=0#gid=0"
+                  target="_blank"
+                  className="underline hover:text-foreground"
+                >
+                  restricted Naxx loot
+                </Link>
+              </span>
+            ) : (
+              <span>
+                <span className="text-gray-400">Not Eligible</span> for{" "}
+                <Link
+                  href="https://docs.google.com/spreadsheets/d/1OBcFgT1AXiPL3eW7x3yUx6EjsopPLlFMclph2OGRkXU/edit?gid=0#gid=0"
+                  target="_blank"
+                  className="underline hover:text-foreground"
+                >
+                  restricted Naxx loot
+                </Link>
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Heatmap Grid */}
@@ -370,6 +397,39 @@ export function PersonalAttendanceSummary({
                       ))}
                     </tr>
                   ))}
+                  <tr>
+                    <td className="py-1 pr-3 text-xs font-medium"></td>
+                    {heatmapData.weeks.map((week) => {
+                      // Calculate total credits for this week
+                      // Naxx, AQ40, BWL = 1 credit each, MC = 0.5 credit
+                      // Max is +3, so MC doesn't count if Naxx + AQ40 + BWL all attended
+                      const hasNaxx = week.zones.naxxramas?.attended ?? false;
+                      const hasAQ40 = week.zones.aq40?.attended ?? false;
+                      const hasBWL = week.zones.bwl?.attended ?? false;
+                      const hasMC = week.zones.mc?.attended ?? false;
+                      const isMCGrayed = week.zones.mc?.isGrayed ?? false;
+
+                      let totalCredits = 0;
+                      if (hasNaxx) totalCredits += 1;
+                      if (hasAQ40) totalCredits += 1;
+                      if (hasBWL) totalCredits += 1;
+
+                      // MC only counts if not grayed (i.e., didn't already hit max of 3)
+                      if (hasMC && !isMCGrayed) totalCredits += 0.5;
+
+                      // Cap at 3
+                      totalCredits = Math.min(totalCredits, 3);
+
+                      return (
+                        <td
+                          key={week.weekStart}
+                          className="px-1 py-1 text-center align-middle text-xs text-muted-foreground"
+                        >
+                          {totalCredits > 0 ? `+${totalCredits}` : ""}
+                        </td>
+                      );
+                    })}
+                  </tr>
                 </tbody>
               </table>
               <div className="mt-2 text-center text-xs italic text-muted-foreground">
