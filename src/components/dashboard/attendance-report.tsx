@@ -102,7 +102,7 @@ export function AttendanceReport({
                     {/* Character Name */}
                     <div
                       className={cn(
-                        "flex items-center justify-end whitespace-nowrap text-right text-xs leading-none transition-opacity group-hover:opacity-80",
+                        "flex items-center justify-end whitespace-nowrap text-right text-xs leading-tight transition-opacity group-hover:opacity-80",
                         isHighlighted
                           ? "font-bold text-chart-2"
                           : "text-muted-foreground",
@@ -115,10 +115,7 @@ export function AttendanceReport({
                     {/* Progress Bar Container with 50% reference line */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div
-                          className="relative min-w-0 transition-opacity group-hover:opacity-80"
-                          style={{ minHeight: "1rem", height: "1rem" }}
-                        >
+                        <div className="relative min-w-0 transition-opacity group-hover:opacity-80">
                           <Progress
                             value={raider.attendancePercent}
                             className="h-4 bg-muted"
