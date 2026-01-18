@@ -65,7 +65,8 @@ const newOrUnmatchedRaiderRule: SoftResRule = {
   name: "New or unmatched raider",
   description: "No recorded raid attendance in database.",
   level: "highlight",
-  evaluate: (ctx) => ctx.characterId === null || ctx.totalRaidsAttendedBenched === 0,
+  evaluate: (ctx) =>
+    ctx.characterId === null || ctx.totalRaidsAttendedBenched === 0,
   icon: "AlertTriangle",
 };
 
@@ -79,11 +80,9 @@ const restrictedItemOkRule: SoftResRule = {
   description: (ctx) => {
     const restrictedItemNames = ctx.srItems
       .filter((itemId) => RESTRICTED_NAXX_ITEMS.has(itemId))
-      .map(
-        (itemId) => ctx.srItemNames?.get(itemId) ?? `Item#${itemId}`,
-      );
+      .map((itemId) => ctx.srItemNames?.get(itemId) ?? `Item#${itemId}`);
 
-    return `Reserved '${restrictedItemNames.join(", ")}' and above 50% attendance. Good luck!!`;
+    return `Reserved \`${restrictedItemNames.join(", ")}\` and above 50% attendance. Good luck!!`;
   },
   level: "info",
   evaluate: (ctx) =>
@@ -106,7 +105,7 @@ const restrictedItemIneligibleRule: SoftResRule = {
       .map((itemId) => ctx.srItemNames!.get(itemId) || `Item#${itemId}`)
       .filter(Boolean);
 
-    return `Reserved '${restrictedItems.join(", ")}', but does not meet Temple raid attendance requirements (50%+).`;
+    return `Reserved \`${restrictedItems.join(", ")}\`, but does not meet Temple raid attendance requirements (50%+).`;
   },
   level: "error",
   evaluate: (ctx) =>

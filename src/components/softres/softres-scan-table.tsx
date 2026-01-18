@@ -170,7 +170,8 @@ export function SoftResScanTable({
                                 rule.level === "error"
                                   ? "text-red-700 dark:text-red-400"
                                   : "text-muted-foreground";
-                              const parts = rule.description.split(/'([^']+)'/g);
+                              const parts =
+                                rule.description.split(/`([^`]+)`/g);
                               return parts.map((part, index) => {
                                 // Odd indices are the quoted item names
                                 if (index % 2 === 1) {
