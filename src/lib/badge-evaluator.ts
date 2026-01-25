@@ -330,11 +330,10 @@ export function evaluateBadge(
 
     // Rare badges (consecutive attendance)
     case "fire-walker":
-      // Only count MC weeks where not grayed
       return (
         findLongestConsecutive(
           scoringWeeks,
-          (week) => !!(week.zones.mc?.attended && !week.zones.mc.isGrayed),
+          (week) => week.zones.mc?.attended ?? false,
         ) >= 4
       );
 
