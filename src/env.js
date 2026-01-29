@@ -26,6 +26,10 @@ export const env = createEnv({
 
     DISCORD_BOT_TOKEN: z.string(),
     DISCORD_RAID_LOGS_CHANNEL_ID: z.string(),
+    DISCORD_RAID_SR_CHANNEL_IDS: z
+      .string()
+      .transform((str) => str.split(",").map((s) => s.trim())),
+    DISCORD_RAID_HELPER_BOT_ID: z.string(),
     DISCORD_WEBHOOK_PUBLIC_KEY: z.string().optional(),
     TEMPLE_WEB_API_TOKEN: z.string(),
 
@@ -45,6 +49,7 @@ export const env = createEnv({
       .string()
       .transform((val) => val.toLowerCase() === "true"),
     NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+    NEXT_PUBLIC_RESTRICTED_NAXX_ITEMS_URL: z.string().url(),
   },
 
   /**
@@ -68,11 +73,15 @@ export const env = createEnv({
 
     DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN,
     DISCORD_RAID_LOGS_CHANNEL_ID: process.env.DISCORD_RAID_LOGS_CHANNEL_ID,
+    DISCORD_RAID_SR_CHANNEL_IDS: process.env.DISCORD_RAID_SR_CHANNEL_IDS,
+    DISCORD_RAID_HELPER_BOT_ID: process.env.DISCORD_RAID_HELPER_BOT_ID,
     DISCORD_WEBHOOK_PUBLIC_KEY: process.env.DISCORD_WEBHOOK_PUBLIC_KEY,
     TEMPLE_WEB_API_TOKEN: process.env.TEMPLE_WEB_API_TOKEN,
 
     NEXT_PUBLIC_POSTHOG_ENABLED: process.env.NEXT_PUBLIC_POSTHOG_ENABLED,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_RESTRICTED_NAXX_ITEMS_URL:
+      process.env.NEXT_PUBLIC_RESTRICTED_NAXX_ITEMS_URL,
 
     NODE_ENV: process.env.NODE_ENV,
     GOOGLE_SITE_VERIFICATION: process.env.GOOGLE_SITE_VERIFICATION,
