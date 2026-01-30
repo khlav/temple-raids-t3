@@ -1,0 +1,158 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
+import { AlertTriangle, Copy, Check } from "lucide-react";
+import { cn } from "~/lib/utils";
+
+interface EnrichmentResult {
+  position: number;
+  name: string;
+  enrichedName: string;
+  status: "already-complete" | "enriched" | "not-found";
+  server: string | null;
+}
+
+interface MRTEnrichResultsProps {
+  results: EnrichmentResult[];
+  enrichedString: string;
+}
+
+const statusConfig = {
+  "already-complete": {
+    variant: "secondary" as const,
+    label: "Has Server",
+    className: "bg-gray-500/10 text-gray-700 dark:text-gray-400",
+  },
+  enriched: {
+    variant: "default" as const,
+    label: "Enriched",
+    className: "bg-green-500/10 text-green-700 dark:text-green-400",
+  },
+  "not-found": {
+    variant: "outline" as const,
+    label: "Not Found",
+    icon: AlertTriangle,
+    tooltip: "Character not found in database. Server could not be added.",
+    className: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+  },
+};
+
+function PlayerSlot({ player }: { player: EnrichmentResult }) {
+  const config = statusConfig[player.status];
+  const Icon = "icon" in config ? config.icon : undefined;
+  const tooltip = "tooltip" in config ? config.tooltip : undefined;
+
+  const slotContent = (
+    <div className="flex items-center justify-between gap-2 rounded-md border p-2">
+      <div className="flex-1 truncate text-sm">
+        {player.enrichedName || player.name}
+      </div>
+      <Badge
+        variant={config.variant}
+        className={cn("gap-1 whitespace-nowrap", config.className)}
+      >
+        {Icon && <Icon className="h-3 w-3" />}
+        {config.label}
+      </Badge>
+    </div>
+  );
+
+  if (tooltip) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{slotContent}</TooltipTrigger>
+          <TooltipContent>
+            <p>{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return slotContent;
+}
+
+export function MRTEnrichResults({
+  results,
+  enrichedString,
+}: MRTEnrichResultsProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(enrichedString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
+  // Organize players into 8 groups of 5
+  const groups: EnrichmentResult[][] = Array.from({ length: 8 }, () => []);
+  for (const result of results) {
+    const groupIndex = Math.floor((result.position - 1) / 5);
+    if (groupIndex >= 0 && groupIndex < 8) {
+      groups[groupIndex]!.push(result);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Enriched Composition</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCopy}
+          className="gap-2"
+        >
+          {copied ? (
+            <>
+              <Check className="h-4 w-4" />
+              Copied!
+            </>
+          ) : (
+            <>
+              <Copy className="h-4 w-4" />
+              Copy MRT String
+            </>
+          )}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {groups.map((groupPlayers, groupIndex) => (
+          <Card key={groupIndex}>
+            <CardHeader>
+              <CardTitle className="text-sm">Group {groupIndex + 1}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {groupPlayers.length > 0 ? (
+                  groupPlayers.map((player) => (
+                    <PlayerSlot key={player.position} player={player} />
+                  ))
+                ) : (
+                  <div className="text-center text-sm text-muted-foreground">
+                    Empty
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
