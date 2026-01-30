@@ -42,12 +42,12 @@ function PlayerSlot({ player }: { player: EnrichmentResult }) {
   const tooltip = "tooltip" in config ? config.tooltip : undefined;
 
   const slotContent = (
-    <div className="flex items-center gap-2 rounded-md border p-2">
+    <div className="flex items-center gap-1.5 rounded border px-2 py-1">
       <div className={cn("flex-1 truncate text-sm", config.className)}>
         {player.enrichedName || player.name}
       </div>
       {Icon && (
-        <Icon className="h-4 w-4 flex-shrink-0 text-yellow-600 dark:text-yellow-400" />
+        <Icon className="h-3.5 w-3.5 flex-shrink-0 text-yellow-600 dark:text-yellow-400" />
       )}
     </div>
   );
@@ -79,23 +79,23 @@ export function MRTEnrichResults({ results }: MRTEnrichResultsProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <h2 className="text-lg font-semibold">Raid Composition</h2>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4">
         {groups.map((groupPlayers, groupIndex) => (
-          <Card key={groupIndex}>
-            <CardHeader>
+          <Card key={groupIndex} className="overflow-hidden">
+            <CardHeader className="px-3 py-2">
               <CardTitle className="text-sm">Group {groupIndex + 1}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+            <CardContent className="px-3 py-2 pt-0">
+              <div className="space-y-1">
                 {groupPlayers.length > 0 ? (
                   groupPlayers.map((player) => (
                     <PlayerSlot key={player.position} player={player} />
                   ))
                 ) : (
-                  <div className="text-center text-sm text-muted-foreground">
+                  <div className="py-1 text-center text-sm text-muted-foreground">
                     Empty
                   </div>
                 )}
