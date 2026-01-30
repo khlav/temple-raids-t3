@@ -30,6 +30,7 @@ export function MRTEnrichInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="font-mono text-sm"
+          autoComplete="off"
         />
         <Button type="submit" disabled={!value.trim() || isLoading}>
           {isLoading ? "Enriching..." : "Enrich"}

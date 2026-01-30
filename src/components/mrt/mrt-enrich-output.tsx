@@ -56,9 +56,10 @@ export function MRTEnrichOutput({ value }: MRTEnrichOutputProps) {
               onFocus={handleFocus}
               className="cursor-pointer font-mono text-sm"
               placeholder="Enriched string will appear here..."
+              autoComplete="off"
             />
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="bg-secondary text-muted-foreground">
             <p>Copied</p>
           </TooltipContent>
         </Tooltip>
