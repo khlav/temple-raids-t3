@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import {
   Tooltip,
@@ -9,7 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { AlertTriangle, Copy, Check } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 interface EnrichmentResult {
@@ -22,7 +20,6 @@ interface EnrichmentResult {
 
 interface MRTEnrichResultsProps {
   results: EnrichmentResult[];
-  enrichedString: string;
 }
 
 const statusConfig = {
@@ -71,22 +68,7 @@ function PlayerSlot({ player }: { player: EnrichmentResult }) {
   return slotContent;
 }
 
-export function MRTEnrichResults({
-  results,
-  enrichedString,
-}: MRTEnrichResultsProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(enrichedString);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error("Failed to copy:", error);
-    }
-  };
-
+export function MRTEnrichResults({ results }: MRTEnrichResultsProps) {
   // Organize players into 8 groups of 5
   const groups: EnrichmentResult[][] = Array.from({ length: 8 }, () => []);
   for (const result of results) {
@@ -98,27 +80,7 @@ export function MRTEnrichResults({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Enriched Composition</h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCopy}
-          className="gap-2"
-        >
-          {copied ? (
-            <>
-              <Check className="h-4 w-4" />
-              Copied!
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4" />
-              Copy MRT String
-            </>
-          )}
-        </Button>
-      </div>
+      <h2 className="text-lg font-semibold">Raid Composition</h2>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {groups.map((groupPlayers, groupIndex) => (
