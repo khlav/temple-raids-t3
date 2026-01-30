@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Badge } from "~/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -28,21 +27,15 @@ interface MRTEnrichResultsProps {
 
 const statusConfig = {
   "already-complete": {
-    variant: "secondary" as const,
-    label: "Has Server",
-    className: "bg-gray-500/10 text-gray-700 dark:text-gray-400",
+    className: "text-muted-foreground",
   },
   enriched: {
-    variant: "default" as const,
-    label: "Enriched",
-    className: "bg-green-500/10 text-green-700 dark:text-green-400",
+    className: "text-green-600 dark:text-green-400 font-medium",
   },
   "not-found": {
-    variant: "outline" as const,
-    label: "Not Found",
+    className: "text-yellow-600 dark:text-yellow-400",
     icon: AlertTriangle,
     tooltip: "Character not found in database. Server could not be added.",
-    className: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
   },
 };
 
@@ -52,17 +45,13 @@ function PlayerSlot({ player }: { player: EnrichmentResult }) {
   const tooltip = "tooltip" in config ? config.tooltip : undefined;
 
   const slotContent = (
-    <div className="flex items-center justify-between gap-2 rounded-md border p-2">
-      <div className="flex-1 truncate text-sm">
+    <div className="flex items-center gap-2 rounded-md border p-2">
+      <div className={cn("flex-1 truncate text-sm", config.className)}>
         {player.enrichedName || player.name}
       </div>
-      <Badge
-        variant={config.variant}
-        className={cn("gap-1 whitespace-nowrap", config.className)}
-      >
-        {Icon && <Icon className="h-3 w-3" />}
-        {config.label}
-      </Badge>
+      {Icon && (
+        <Icon className="h-4 w-4 flex-shrink-0 text-yellow-600 dark:text-yellow-400" />
+      )}
     </div>
   );
 
