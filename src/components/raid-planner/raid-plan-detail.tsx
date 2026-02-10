@@ -6,16 +6,6 @@ import { Loader2, X, RotateCcw, RefreshCw } from "lucide-react";
 import { ClassIcon } from "~/components/ui/class-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Checkbox } from "~/components/ui/checkbox";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
 import { api } from "~/trpc/react";
 import { RaidPlanHeader } from "./raid-plan-header";
@@ -24,6 +14,9 @@ import { AddEncounterDialog } from "./add-encounter-dialog";
 import { MRTControls } from "./mrt-controls";
 import { AAPanel } from "./aa-panel";
 import { RaidPlanDetailSkeleton } from "./skeletons";
+import { DeleteEncounterDialog } from "./delete-encounter-dialog";
+import { CharacterReplacementDialog } from "./character-replacement-dialog";
+import { RefreshConfirmDialog } from "./refresh-confirm-dialog";
 import { CUSTOM_ZONE_ID, RAID_ZONE_CONFIG } from "~/lib/raid-zones";
 import { cn } from "~/lib/utils";
 import { useBreadcrumb } from "~/components/nav/breadcrumb-context";
@@ -529,149 +522,40 @@ export function RaidPlanDetail({
         </DndContext>
       </Tabs>
 
-      {/* Delete Encounter Confirmation */}
-      <AlertDialog
+      <DeleteEncounterDialog
         open={!!deleteEncounterId}
         onOpenChange={(open) => !open && setDeleteEncounterId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Encounter</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &quot;
-              {encounterToDelete?.encounterName}&quot;? Any custom assignments
-              for this encounter will be lost.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteEncounterMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteEncounterId) {
-                  deleteEncounterMutation.mutate({
-                    encounterId: deleteEncounterId,
-                  });
-                }
-              }}
-              disabled={deleteEncounterMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteEncounterMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        encounterName={encounterToDelete?.encounterName}
+        isPending={deleteEncounterMutation.isPending}
+        onDelete={() => {
+          if (deleteEncounterId) {
+            deleteEncounterMutation.mutate({
+              encounterId: deleteEncounterId,
+            });
+          }
+        }}
+      />
 
-      {/* Character Replacement Confirmation */}
-      <AlertDialog
+      <CharacterReplacementDialog
         open={!!pendingCharacterUpdate}
         onOpenChange={(open) => !open && setPendingCharacterUpdate(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Replace Character</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-3">
-                <p>
-                  This character has AA assignments in the following encounters:
-                </p>
-                <ul className="list-inside list-disc text-sm">
-                  {pendingCharacterUpdate?.existingAssignments.map((a, i) => (
-                    <li key={i}>
-                      {a.encounterName} ({a.slotName})
-                    </li>
-                  ))}
-                </ul>
-                <p>What would you like to do?</p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
-            <AlertDialogCancel
-              disabled={clearAAAssignmentsMutation.isPending}
-              onClick={() => setPendingCharacterUpdate(null)}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => handleCharacterReplaceConfirm(false)}
-              disabled={clearAAAssignmentsMutation.isPending}
-            >
-              Transfer to {pendingCharacterUpdate?.newCharacter.name}
-            </AlertDialogAction>
-            <AlertDialogAction
-              onClick={() => handleCharacterReplaceConfirm(true)}
-              disabled={clearAAAssignmentsMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {clearAAAssignmentsMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Clearing...
-                </>
-              ) : (
-                "Clear Assignments"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        existingAssignments={pendingCharacterUpdate?.existingAssignments}
+        newCharacterName={pendingCharacterUpdate?.newCharacter.name}
+        isPending={clearAAAssignmentsMutation.isPending}
+        onTransfer={() => handleCharacterReplaceConfirm(false)}
+        onClearAssignments={() => handleCharacterReplaceConfirm(true)}
+        onCancel={() => setPendingCharacterUpdate(null)}
+      />
 
-      {/* Refresh from Raidhelper Confirmation */}
-      <AlertDialog
+      <RefreshConfirmDialog
         open={showRefreshDialog}
         onOpenChange={(open) => !open && setShowRefreshDialog(false)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reimport from Raidhelper</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-3">
-                <p>
-                  This will re-fetch the current roster from Raidhelper and
-                  update the plan&apos;s character list.
-                </p>
-                <ul className="list-disc pl-6 font-medium text-destructive">
-                  <li>Custom encounter groups will be deleted.</li>
-                  <li>AA assignments may change or disappear.</li>
-                </ul>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              disabled={isRefreshing || refreshCharactersMutation.isPending}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setShowRefreshDialog(false);
-                void handleRefreshFromRaidhelper();
-              }}
-              disabled={isRefreshing || refreshCharactersMutation.isPending}
-            >
-              {isRefreshing || refreshCharactersMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Refreshing...
-                </>
-              ) : (
-                "Refresh"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        isPending={isRefreshing || refreshCharactersMutation.isPending}
+        onConfirm={() => {
+          setShowRefreshDialog(false);
+          void handleRefreshFromRaidhelper();
+        }}
+      />
     </div>
   );
 }
