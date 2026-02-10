@@ -10,7 +10,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { Loader2, X, RotateCcw, RefreshCw, Pencil } from "lucide-react";
+import { Loader2, X, RotateCcw, RefreshCw } from "lucide-react";
 import { ClassIcon } from "~/components/ui/class-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -24,20 +24,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
-import { Skeleton } from "~/components/ui/skeleton";
 import { Button } from "~/components/ui/button";
 import { api } from "~/trpc/react";
 import { useToast } from "~/hooks/use-toast";
 import { RaidPlanHeader } from "./raid-plan-header";
 import { RaidPlanGroupsGrid } from "./raid-plan-groups-grid";
 import { AddEncounterDialog } from "./add-encounter-dialog";
+import { MRTControls } from "./mrt-controls";
+import { AAPanel } from "./aa-panel";
+import { RaidPlanDetailSkeleton } from "./raid-plan-detail-skeleton";
 import { CUSTOM_ZONE_ID, RAID_ZONE_CONFIG } from "~/lib/raid-zones";
-import { AATemplateRenderer } from "./aa-template-renderer";
 import {
   renderAATemplate,
   type AACharacterAssignment,
 } from "~/lib/aa-template";
-import { AATemplateEditorDialog } from "./aa-template-editor-dialog";
 import { MRTCodec } from "~/lib/mrt-codec";
 import { cn } from "~/lib/utils";
 import type { RaidParticipant } from "~/server/api/interfaces/raid";
@@ -51,11 +51,7 @@ import {
   type CharacterDeleteEvent,
   type AASlotAssignment,
 } from "./types";
-import {
-  WOW_SERVERS,
-  VALID_WRITE_IN_CLASSES,
-  getGroupCount,
-} from "./constants";
+import { VALID_WRITE_IN_CLASSES, getGroupCount } from "./constants";
 
 interface RaidPlanDetailProps {
   planId: string;
@@ -1338,238 +1334,6 @@ export function RaidPlanDetail({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-function MRTControls({
-  onExportMRT,
-  mrtCopied,
-  homeServer,
-  onHomeServerChange,
-  disabled,
-}: {
-  onExportMRT: () => void;
-  mrtCopied: boolean;
-  homeServer: string;
-  onHomeServerChange: (server: string) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="ml-auto flex items-center gap-2">
-      <label
-        className={cn(
-          "text-xs text-muted-foreground",
-          disabled && "opacity-40",
-        )}
-      >
-        My server:
-      </label>
-      <select
-        value={homeServer}
-        onChange={(e) => onHomeServerChange(e.target.value)}
-        disabled={disabled}
-        className={cn(
-          "h-7 rounded-md border bg-background px-2 text-xs",
-          disabled && "opacity-40",
-        )}
-      >
-        <option value="">All servers</option>
-        {WOW_SERVERS.map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
-      </select>
-      <button
-        type="button"
-        onClick={onExportMRT}
-        disabled={disabled}
-        className={cn(
-          "h-7 rounded-md bg-primary px-3 text-xs text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none",
-          disabled && "opacity-40",
-        )}
-      >
-        {mrtCopied ? "Copied!" : "Copy MRT Export"}
-      </button>
-    </div>
-  );
-}
-
-interface AAPanelProps {
-  template: string | null;
-  onSaveTemplate: (template: string) => void;
-  characters: RaidPlanCharacter[];
-  slotAssignments: AASlotAssignment[];
-  onAssign: (planCharacterId: string, slotName: string) => void;
-  onRemove: (planCharacterId: string, slotName: string) => void;
-  onReorder: (slotName: string, planCharacterIds: string[]) => void;
-  contextId: string;
-  contextLabel: string;
-  zoneName: string;
-  isSaving?: boolean;
-  defaultTemplate?: string | null;
-  onResetToDefault?: () => void;
-  isResetting?: boolean;
-}
-
-function AAPanel({
-  template,
-  onSaveTemplate,
-  characters,
-  slotAssignments,
-  onAssign,
-  onRemove,
-  onReorder,
-  contextId,
-  contextLabel,
-  zoneName,
-  isSaving,
-  defaultTemplate,
-  onResetToDefault,
-  isResetting,
-}: AAPanelProps) {
-  const [editorOpen, setEditorOpen] = useState(false);
-  const hasDefaultTemplate = !!defaultTemplate;
-
-  // If no template yet, show create options
-  if (!template) {
-    return (
-      <div className="space-y-4 rounded-lg border p-4">
-        <div className="text-sm text-muted-foreground">
-          Create an AA template with <code>{"{assign:SlotName}"}</code>{" "}
-          placeholders, then drag characters from the groups to assign them. Use{" "}
-          <code>{"{ref:SlotName}"}</code> to mirror a slot in multiple places.
-        </div>
-        <div className="flex flex-col gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditorOpen(true)}
-            className="w-full"
-          >
-            <Pencil className="mr-2 h-4 w-4" />
-            Create Template
-          </Button>
-          {hasDefaultTemplate && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onResetToDefault?.()}
-              disabled={isResetting}
-              className="w-full"
-            >
-              {isResetting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Load Default Template
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-        <AATemplateEditorDialog
-          open={editorOpen}
-          onOpenChange={setEditorOpen}
-          contextLabel={contextLabel}
-          zoneName={zoneName}
-          initialTemplate=""
-          hasExistingTemplate={false}
-          onSave={(t) => {
-            onSaveTemplate(t);
-            setEditorOpen(false);
-          }}
-          onClear={() => {}}
-          isSaving={isSaving ?? false}
-        />
-      </div>
-    );
-  }
-
-  // Show full AA interface with renderer + edit button
-  return (
-    <div className="space-y-4">
-      <AATemplateRenderer
-        template={template}
-        encounterId={contextId.includes("-") ? contextId : undefined}
-        raidPlanId={!contextId.includes("-") ? contextId : undefined}
-        characters={characters}
-        slotAssignments={slotAssignments}
-        onAssign={onAssign}
-        onRemove={onRemove}
-        onReorder={onReorder}
-        skipDndContext
-      />
-
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-full justify-start gap-2 text-muted-foreground"
-        onClick={() => setEditorOpen(true)}
-      >
-        <Pencil className="h-4 w-4" />
-        Edit Template
-      </Button>
-
-      <AATemplateEditorDialog
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        contextLabel={contextLabel}
-        zoneName={zoneName}
-        initialTemplate={template}
-        hasExistingTemplate={true}
-        onSave={(t) => {
-          onSaveTemplate(t);
-          setEditorOpen(false);
-        }}
-        onClear={() => {
-          onSaveTemplate("");
-          setEditorOpen(false);
-        }}
-        isSaving={isSaving ?? false}
-        onResetToDefault={
-          hasDefaultTemplate
-            ? () => {
-                onResetToDefault?.();
-                setEditorOpen(false);
-              }
-            : undefined
-        }
-        isResetting={isResetting}
-      />
-    </div>
-  );
-}
-
-function RaidPlanDetailSkeleton() {
-  return (
-    <div className="space-y-6">
-      {/* Header skeleton */}
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-96" />
-      </div>
-
-      {/* Two-column layout skeleton */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left column */}
-        <div className="space-y-4">
-          <Skeleton className="h-9 w-48" />
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-40" />
-            ))}
-          </div>
-        </div>
-
-        {/* Right column */}
-        <Skeleton className="h-[300px]" />
-      </div>
     </div>
   );
 }
