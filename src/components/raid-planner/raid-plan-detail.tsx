@@ -29,20 +29,10 @@ import { Button } from "~/components/ui/button";
 import { api } from "~/trpc/react";
 import { useToast } from "~/hooks/use-toast";
 import { RaidPlanHeader } from "./raid-plan-header";
-import {
-  RaidPlanGroupsGrid,
-  WOW_SERVERS,
-  VALID_WRITE_IN_CLASSES,
-  type RaidPlanCharacter,
-  type SlotFillEvent,
-  type CharacterDeleteEvent,
-} from "./raid-plan-groups-grid";
+import { RaidPlanGroupsGrid } from "./raid-plan-groups-grid";
 import { AddEncounterDialog } from "./add-encounter-dialog";
 import { CUSTOM_ZONE_ID, RAID_ZONE_CONFIG } from "~/lib/raid-zones";
-import {
-  AATemplateRenderer,
-  type AASlotAssignment,
-} from "./aa-template-renderer";
+import { AATemplateRenderer } from "./aa-template-renderer";
 import {
   renderAATemplate,
   type AACharacterAssignment,
@@ -53,38 +43,18 @@ import { cn } from "~/lib/utils";
 import type { RaidParticipant } from "~/server/api/interfaces/raid";
 import { useBreadcrumb } from "~/components/nav/breadcrumb-context";
 import { useSession } from "next-auth/react";
-
-interface EncounterAssignment {
-  encounterId: string;
-  planCharacterId: string;
-  groupNumber: number | null;
-  position: number | null;
-}
-
-function buildEncounterCharacters(
-  planCharacters: RaidPlanCharacter[],
-  encounterAssignments: EncounterAssignment[],
-  encounterId: string,
-): RaidPlanCharacter[] {
-  const assignmentMap = new Map(
-    encounterAssignments
-      .filter((a) => a.encounterId === encounterId)
-      .map((a) => [a.planCharacterId, a]),
-  );
-
-  return planCharacters.map((char) => {
-    const assignment = assignmentMap.get(char.id);
-    if (assignment) {
-      return {
-        ...char,
-        defaultGroup: assignment.groupNumber,
-        defaultPosition: assignment.position,
-      };
-    }
-    // No assignment row = bench for this encounter
-    return { ...char, defaultGroup: null, defaultPosition: null };
-  });
-}
+import {
+  buildEncounterCharacters,
+  type RaidPlanCharacter,
+  type SlotFillEvent,
+  type CharacterDeleteEvent,
+  type AASlotAssignment,
+} from "./types";
+import {
+  WOW_SERVERS,
+  VALID_WRITE_IN_CLASSES,
+  getGroupCount,
+} from "./constants";
 
 interface RaidPlanDetailProps {
   planId: string;
@@ -1178,9 +1148,7 @@ export function RaidPlanDetail({
     (e) => e.id === deleteEncounterId,
   );
 
-  // Determine group count based on zone (20-man raids use 4 groups, custom defaults to 8)
-  const is20Man = ["aq20", "zg", "onyxia"].includes(plan.zoneId.toLowerCase());
-  const groupCount = is20Man ? 4 : 8;
+  const groupCount = getGroupCount(plan.zoneId);
   const zoneName =
     RAID_ZONE_CONFIG.find((z) => z.instance === plan.zoneId)?.name ??
     plan.zoneId;

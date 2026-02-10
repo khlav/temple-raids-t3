@@ -12,14 +12,7 @@ import {
   useDroppable,
   useDraggable,
 } from "@dnd-kit/core";
-import {
-  Armchair,
-  ChevronDown,
-  CircleHelp,
-  Clock,
-  Lock,
-  Pencil,
-} from "lucide-react";
+import { ChevronDown, CircleHelp, Lock, Pencil } from "lucide-react";
 import { ClassIcon } from "~/components/ui/class-icon";
 import { CharacterSelector } from "~/components/characters/character-selector";
 import {
@@ -30,89 +23,19 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { cn } from "~/lib/utils";
 import type { RaidParticipant } from "~/server/api/interfaces/raid";
-
-const CLASS_COLORS: Record<string, string> = {
-  Druid: "rgba(255, 124, 10, 0.28)",
-  Hunter: "rgba(107, 212, 85, 0.28)",
-  Mage: "rgba(63, 199, 235, 0.28)",
-  Paladin: "rgba(244, 140, 186, 0.28)",
-  Priest: "rgba(255, 255, 255, 0.18)",
-  Rogue: "rgba(255, 224, 60, 0.24)",
-  Shaman: "rgba(0, 112, 221, 0.28)",
-  Warlock: "rgba(135, 136, 238, 0.28)",
-  Warrior: "rgba(198, 155, 109, 0.28)",
-};
-
-const WOW_CLASSES = [
-  "Druid",
-  "Hunter",
-  "Mage",
-  "Paladin",
-  "Priest",
-  "Rogue",
-  "Shaman",
-  "Warlock",
-  "Warrior",
-] as const;
-
-const WOW_CLASSES_SET = new Set<string>(WOW_CLASSES);
-
-// RaidHelper signup statuses that get special icons (non-WoW classes)
-const RAIDHELPER_STATUS_ICONS: Record<
-  string,
-  React.ComponentType<{ className?: string }>
-> = {
-  Bench: Armchair,
-  Tentative: CircleHelp,
-  Late: Clock,
-};
-
-// All valid writeInClass values (WoW classes + RaidHelper statuses)
-export const VALID_WRITE_IN_CLASSES = new Set<string>([
-  ...WOW_CLASSES,
-  ...Object.keys(RAIDHELPER_STATUS_ICONS),
-]);
-
-export const WOW_SERVERS = [
-  "Ashkandi",
-  "Mankrik",
-  "Pagle",
-  "Westfall",
-  "Windseeker",
-] as const;
-
-export interface RaidPlanCharacter {
-  id: string;
-  characterId: number | null;
-  characterName: string;
-  defaultGroup: number | null;
-  defaultPosition: number | null;
-  class: string | null;
-  server: string | null;
-}
-
-export interface CharacterMoveEvent {
-  planCharacterId: string;
-  targetGroup: number | null;
-  targetPosition: number | null;
-}
-
-export interface CharacterSwapEvent {
-  planCharacterIdA: string;
-  planCharacterIdB: string;
-}
-
-export interface SlotFillEvent {
-  targetGroup: number;
-  targetPosition: number;
-  characterId: number | null;
-  characterName: string;
-  writeInClass?: string | null;
-}
-
-export interface CharacterDeleteEvent {
-  planCharacterId: string;
-}
+import type {
+  RaidPlanCharacter,
+  CharacterMoveEvent,
+  CharacterSwapEvent,
+  SlotFillEvent,
+  CharacterDeleteEvent,
+} from "./types";
+import {
+  CLASS_COLORS,
+  WOW_CLASSES,
+  WOW_CLASSES_SET,
+  RAIDHELPER_STATUS_ICONS,
+} from "./constants";
 
 interface RaidPlanGroupsGridProps {
   characters: RaidPlanCharacter[];
