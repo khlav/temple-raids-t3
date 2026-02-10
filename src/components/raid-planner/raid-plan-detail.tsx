@@ -32,7 +32,7 @@ import { RaidPlanGroupsGrid } from "./raid-plan-groups-grid";
 import { AddEncounterDialog } from "./add-encounter-dialog";
 import { MRTControls } from "./mrt-controls";
 import { AAPanel } from "./aa-panel";
-import { RaidPlanDetailSkeleton } from "./raid-plan-detail-skeleton";
+import { RaidPlanDetailSkeleton } from "./skeletons";
 import { CUSTOM_ZONE_ID, RAID_ZONE_CONFIG } from "~/lib/raid-zones";
 import {
   renderAATemplate,
