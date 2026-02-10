@@ -20,7 +20,16 @@ import {
 } from "~/lib/aa-template";
 import { parseAAFormatting } from "~/lib/aa-formatting";
 import { AASlotInline, AARefInline } from "./aa-slot-dropzone";
-import type { RaidPlanCharacter, AASlotAssignment } from "./types";
+import type { RaidPlanCharacter } from "./types";
+
+export interface AASlotAssignment {
+  id: string;
+  encounterId: string | null;
+  raidPlanId: string | null;
+  planCharacterId: string;
+  slotName: string;
+  sortOrder: number;
+}
 
 interface AATemplateRendererProps {
   template: string;
@@ -61,7 +70,7 @@ export function AATemplateRenderer({
     }),
   );
 
-  // Parse template to get slot definitions and ref definitions
+  // Parse template to get slot definitions
   const { slots, refs, errors } = useMemo(
     () => parseAATemplate(template),
     [template],
