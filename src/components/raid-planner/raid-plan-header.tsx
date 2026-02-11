@@ -181,6 +181,7 @@ export function RaidPlanHeader({
             >
               <Pencil className="h-3.5 w-3.5" />
             </Button>
+            <span className="text-base text-muted-foreground">{zoneName}</span>
           </div>
         )}
 
@@ -225,10 +226,8 @@ export function RaidPlanHeader({
 
       {/* Metadata row */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-        <span>Zone: {zoneName}</span>
         {event && (
           <>
-            <span>|</span>
             <a
               href={`/raids/${event.raidId}`}
               className="hover:text-foreground hover:underline"
@@ -238,35 +237,38 @@ export function RaidPlanHeader({
           </>
         )}
         {onTogglePublic && (
-          <div className="ml-6 flex items-center gap-2">
-            <label
-              htmlFor="public-toggle"
-              className="text-sm font-medium text-muted-foreground"
-            >
-              Share with Raiders
-            </label>
-            <Switch
-              id="public-toggle"
-              checked={isPublic ?? false}
-              onCheckedChange={onTogglePublic}
-            />
-            {isPublic && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-xs"
-                onClick={() => {
-                  const url = `${window.location.origin}/raid-plans/${planId}`;
-                  window.open(url, "_blank");
-                }}
+          <>
+            <div className="ml-6 flex items-center gap-2">
+              <label
+                htmlFor="public-toggle"
+                className="text-sm font-medium text-muted-foreground"
               >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Open in New Tab
-              </Button>
-            )}
-          </div>
+                Share with Raiders
+              </label>
+              <Switch
+                id="public-toggle"
+                checked={isPublic ?? false}
+                onCheckedChange={onTogglePublic}
+              />
+              {isPublic && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 text-xs"
+                  onClick={() => {
+                    const url = `${window.location.origin}/raid-plans/${planId}`;
+                    window.open(url, "_blank");
+                  }}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open in New Tab
+                </Button>
+              )}
+            </div>
+            <span>|</span>
+          </>
         )}
-        <span>|</span>
+        {event && !onTogglePublic && <span>|</span>}
         <span>Created: {format(createdAt, "MMM d, yyyy")}</span>
         <span>|</span>
         <a
