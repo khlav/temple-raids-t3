@@ -149,6 +149,7 @@ export function RaidPlanPublicView({
                   groupCount={groupCount}
                   editable={false}
                   showEditControls={false}
+                  hideBench
                   skipDndContext
                 />
               </TabsContent>
@@ -166,6 +167,7 @@ export function RaidPlanPublicView({
                       characters={plan.characters as RaidPlanCharacter[]}
                       groupCount={groupCount}
                       locked
+                      hideBench
                       skipDndContext
                     />
                   ) : (
@@ -178,6 +180,7 @@ export function RaidPlanPublicView({
                       groupCount={groupCount}
                       editable={false}
                       showEditControls={false}
+                      hideBench
                       skipDndContext
                     />
                   )}

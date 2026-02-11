@@ -13,6 +13,7 @@ import {
 import {
   createTRPCRouter,
   protectedProcedure,
+  publicProcedure,
   raidManagerProcedure,
 } from "~/server/api/trpc";
 import { CUSTOM_ZONE_ID } from "~/lib/raid-zones";
@@ -404,6 +405,31 @@ export const raidPlanRouter = createTRPCRouter({
         encounterAssignments,
         aaSlotAssignments,
       };
+    }),
+
+  /**
+   * Get all public raid plans in reverse chronological order
+   */
+  getPublicPlans: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(20),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const plans = await ctx.db
+        .select({
+          id: raidPlans.id,
+          name: raidPlans.name,
+          zoneId: raidPlans.zoneId,
+          createdAt: raidPlans.createdAt,
+        })
+        .from(raidPlans)
+        .where(eq(raidPlans.isPublic, true))
+        .orderBy(desc(raidPlans.createdAt))
+        .limit(input.limit);
+
+      return plans;
     }),
 
   /**
