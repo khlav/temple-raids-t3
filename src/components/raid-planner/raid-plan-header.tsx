@@ -193,39 +193,6 @@ export function RaidPlanHeader({
           </div>
         )}
 
-        {onTogglePublic && (
-          <div className="flex items-center gap-2">
-            <Switch
-              id="public-toggle"
-              checked={isPublic ?? false}
-              onCheckedChange={onTogglePublic}
-            />
-            <label
-              htmlFor="public-toggle"
-              className="text-sm font-medium text-muted-foreground"
-            >
-              Public
-            </label>
-            {isPublic && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-xs"
-                onClick={() => {
-                  const url = `${window.location.origin}/raid-plans/${planId}`;
-                  void navigator.clipboard.writeText(url).then(() => {
-                    setLinkCopied(true);
-                    setTimeout(() => setLinkCopied(false), 2000);
-                  });
-                }}
-              >
-                <Link2 className="h-3.5 w-3.5" />
-                {linkCopied ? "Copied!" : "Copy Link"}
-              </Button>
-            )}
-          </div>
-        )}
-
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm">
@@ -264,6 +231,40 @@ export function RaidPlanHeader({
           </AlertDialogContent>
         </AlertDialog>
       </div>
+
+      {/* Public toggle row */}
+      {onTogglePublic && (
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="public-toggle"
+            className="text-sm font-medium text-muted-foreground"
+          >
+            Share with Raiders
+          </label>
+          <Switch
+            id="public-toggle"
+            checked={isPublic ?? false}
+            onCheckedChange={onTogglePublic}
+          />
+          {isPublic && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 text-xs"
+              onClick={() => {
+                const url = `${window.location.origin}/raid-plans/${planId}`;
+                void navigator.clipboard.writeText(url).then(() => {
+                  setLinkCopied(true);
+                  setTimeout(() => setLinkCopied(false), 2000);
+                });
+              }}
+            >
+              <Link2 className="h-3.5 w-3.5" />
+              {linkCopied ? "Copied!" : "Copy Link"}
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Metadata row */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
