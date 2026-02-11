@@ -93,12 +93,24 @@ export function RaidPlanPublicView({
     <div className="relative space-y-6">
       {!isLoggedIn && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[2px]">
-          <div className="text-center">
-            <h2 className="mb-4 text-xl font-semibold">Login Required</h2>
+          <div className="flex flex-col items-center justify-center text-center">
             <p className="mb-6 text-muted-foreground">
               Please login to Discord to view this raid plan.
             </p>
-            <Button onClick={() => signIn("discord")}>Login to Discord</Button>
+            <Button
+              onClick={() =>
+                signIn("discord", { redirectTo: window.location.pathname })
+              }
+              className="mx-auto flex items-center justify-center gap-2 bg-[#5865F2] text-white hover:bg-[#8891f2]"
+            >
+              <img
+                src="/img/discord-mark-white.svg"
+                alt="Discord"
+                height={24}
+                width={24}
+              />
+              Sign in with Discord
+            </Button>
           </div>
         </div>
       )}
