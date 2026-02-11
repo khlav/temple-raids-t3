@@ -271,7 +271,7 @@ export const raidPlanRouter = createTRPCRouter({
   /**
    * Fetch a public raid plan by ID (requires authentication but not raid manager role)
    */
-  getPublicById: protectedProcedure
+  getPublicById: publicProcedure
     .input(z.object({ planId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const plan = await ctx.db

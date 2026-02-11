@@ -238,12 +238,12 @@ export function RaidPlanHeader({
         )}
         {onTogglePublic && (
           <>
-            <div className="ml-6 flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <label
                 htmlFor="public-toggle"
-                className="text-sm font-medium text-muted-foreground"
+                className={"text-sm font-medium text-muted-foreground"+ (isPublic ? " text-primary" : "")}
               >
-                Share with Raiders
+                {isPublic ? "Shared with Raiders" : "Share with Raiders"}
               </label>
               <Switch
                 id="public-toggle"
@@ -254,7 +254,7 @@ export function RaidPlanHeader({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 gap-1 text-xs"
+                  className="h-4 gap-1 text-xs"
                   onClick={() => {
                     const url = `${window.location.origin}/raid-plans/${planId}`;
                     window.open(url, "_blank");
