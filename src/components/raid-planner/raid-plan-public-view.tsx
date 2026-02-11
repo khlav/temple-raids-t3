@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { DndContext } from "@dnd-kit/core";
 import { format } from "date-fns";
 import { ExternalLink } from "lucide-react";
@@ -103,7 +104,7 @@ export function RaidPlanPublicView({
               }
               className="mx-auto flex items-center justify-center gap-2 bg-[#5865F2] text-white hover:bg-[#8891f2]"
             >
-              <img
+              <Image
                 src="/img/discord-mark-white.svg"
                 alt="Discord"
                 height={24}
