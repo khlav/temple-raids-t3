@@ -3,15 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import {
-  Trash2,
-  ExternalLink,
-  Loader2,
-  Pencil,
-  Check,
-  X,
-  Link2,
-} from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Pencil, Check, X } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
@@ -60,7 +52,6 @@ export function RaidPlanHeader({
   const router = useRouter();
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -232,40 +223,6 @@ export function RaidPlanHeader({
         </AlertDialog>
       </div>
 
-      {/* Public toggle row */}
-      {onTogglePublic && (
-        <div className="flex items-center gap-2">
-          <label
-            htmlFor="public-toggle"
-            className="text-sm font-medium text-muted-foreground"
-          >
-            Share with Raiders
-          </label>
-          <Switch
-            id="public-toggle"
-            checked={isPublic ?? false}
-            onCheckedChange={onTogglePublic}
-          />
-          {isPublic && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 text-xs"
-              onClick={() => {
-                const url = `${window.location.origin}/raid-plans/${planId}`;
-                void navigator.clipboard.writeText(url).then(() => {
-                  setLinkCopied(true);
-                  setTimeout(() => setLinkCopied(false), 2000);
-                });
-              }}
-            >
-              <Link2 className="h-3.5 w-3.5" />
-              {linkCopied ? "Copied!" : "Copy Link"}
-            </Button>
-          )}
-        </div>
-      )}
-
       {/* Metadata row */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
         <span>Zone: {zoneName}</span>
@@ -279,6 +236,35 @@ export function RaidPlanHeader({
               Event: {event.name} ({event.date})
             </a>
           </>
+        )}
+        {onTogglePublic && (
+          <div className="ml-6 flex items-center gap-2">
+            <label
+              htmlFor="public-toggle"
+              className="text-sm font-medium text-muted-foreground"
+            >
+              Share with Raiders
+            </label>
+            <Switch
+              id="public-toggle"
+              checked={isPublic ?? false}
+              onCheckedChange={onTogglePublic}
+            />
+            {isPublic && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                onClick={() => {
+                  const url = `${window.location.origin}/raid-plans/${planId}`;
+                  window.open(url, "_blank");
+                }}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open in New Tab
+              </Button>
+            )}
+          </div>
         )}
         <span>|</span>
         <span>Created: {format(createdAt, "MMM d, yyyy")}</span>
