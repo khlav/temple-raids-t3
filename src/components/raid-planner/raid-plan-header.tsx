@@ -3,9 +3,18 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Trash2, ExternalLink, Loader2, Pencil, Check, X } from "lucide-react";
+import {
+  Trash2,
+  ExternalLink,
+  Loader2,
+  Pencil,
+  Check,
+  X,
+  Link2,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { Switch } from "~/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +42,8 @@ interface RaidPlanHeaderProps {
   event: { raidId: number; name: string; date: string } | null;
   createdAt: Date;
   onNameUpdate?: () => void;
+  isPublic?: boolean;
+  onTogglePublic?: (isPublic: boolean) => void;
 }
 
 export function RaidPlanHeader({
@@ -43,10 +54,13 @@ export function RaidPlanHeader({
   event,
   createdAt,
   onNameUpdate,
+  isPublic,
+  onTogglePublic,
 }: RaidPlanHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -176,6 +190,39 @@ export function RaidPlanHeader({
             >
               <Pencil className="h-3.5 w-3.5" />
             </Button>
+          </div>
+        )}
+
+        {onTogglePublic && (
+          <div className="flex items-center gap-2">
+            <Switch
+              id="public-toggle"
+              checked={isPublic ?? false}
+              onCheckedChange={onTogglePublic}
+            />
+            <label
+              htmlFor="public-toggle"
+              className="text-sm font-medium text-muted-foreground"
+            >
+              Public
+            </label>
+            {isPublic && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                onClick={() => {
+                  const url = `${window.location.origin}/raid-plans/${planId}`;
+                  void navigator.clipboard.writeText(url).then(() => {
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  });
+                }}
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                {linkCopied ? "Copied!" : "Copy Link"}
+              </Button>
+            )}
           </div>
         )}
 
