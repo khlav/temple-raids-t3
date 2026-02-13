@@ -305,7 +305,7 @@ export const raidHelperRouter = createTRPCRouter({
         actualEventId !== input.eventId
           ? fetch(`${RAID_HELPER_API_BASE}/v2/events/${actualEventId}`)
           : Promise.resolve(initialResponse),
-        fetch(`${RAID_HELPER_API_BASE}/raidplan/${actualEventId}`),
+        fetch(`${RAID_HELPER_API_BASE}/v3/comps/${actualEventId}`),
       ]);
 
       // For the resolved event, we may need to re-fetch if we reused initialResponse
