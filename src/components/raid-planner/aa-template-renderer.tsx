@@ -9,6 +9,7 @@ import {
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  closestCorners,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { AlertTriangle } from "lucide-react";
@@ -445,6 +446,7 @@ export function AATemplateRenderer({
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
