@@ -199,45 +199,42 @@ export function RaidPlanDetail({
           encounters={plan.encounters}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          leftActions={
+            <AddEncounterDialog planId={planId} onEncounterCreated={refetch} />
+          }
           actions={
-            <>
-              <AddEncounterDialog
-                planId={planId}
-                onEncounterCreated={refetch}
-              />
-              <ManageEncountersDialog
-                encounters={plan.encounters.map((e) => ({
-                  id: e.id,
-                  encounterName: e.encounterName,
-                  sortOrder: e.sortOrder,
-                }))}
-                onSave={(encounters) => {
-                  // Handle reorder
-                  reorderEncountersMutation.mutate({
-                    encounters: encounters.map((e) => ({
-                      id: e.id,
-                      sortOrder: e.sortOrder,
-                    })),
-                  });
-                  // Handle renames
-                  encounters.forEach((e) => {
-                    if (e.encounterName) {
-                      updateEncounterMutation.mutate({
-                        encounterId: e.id,
-                        encounterName: e.encounterName,
-                      });
-                    }
-                  });
-                }}
-                onDelete={(encounterId) => setDeleteEncounterId(encounterId)}
-                onAdd={(encounterName) =>
-                  createEncounterMutation.mutate({ planId, encounterName })
-                }
-                isPending={reorderEncountersMutation.isPending}
-                isDeletePending={deleteEncounterMutation.isPending}
-                isAddPending={createEncounterMutation.isPending}
-              />
-            </>
+            <ManageEncountersDialog
+              encounters={plan.encounters.map((e) => ({
+                id: e.id,
+                encounterName: e.encounterName,
+                sortOrder: e.sortOrder,
+              }))}
+              onSave={(encounters) => {
+                // Handle reorder
+                reorderEncountersMutation.mutate({
+                  encounters: encounters.map((e) => ({
+                    id: e.id,
+                    sortOrder: e.sortOrder,
+                  })),
+                });
+                // Handle renames
+                encounters.forEach((e) => {
+                  if (e.encounterName) {
+                    updateEncounterMutation.mutate({
+                      encounterId: e.id,
+                      encounterName: e.encounterName,
+                    });
+                  }
+                });
+              }}
+              onDelete={(encounterId) => setDeleteEncounterId(encounterId)}
+              onAdd={(encounterName) =>
+                createEncounterMutation.mutate({ planId, encounterName })
+              }
+              isPending={reorderEncountersMutation.isPending}
+              isDeletePending={deleteEncounterMutation.isPending}
+              isAddPending={createEncounterMutation.isPending}
+            />
           }
         />
 

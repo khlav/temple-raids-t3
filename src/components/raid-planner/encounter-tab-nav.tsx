@@ -9,6 +9,9 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { cn } from "~/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "~/components/ui/button";
+import { useMemo } from "react";
 
 interface EncounterTabItem {
   id: string;
@@ -20,8 +23,10 @@ interface EncounterTabNavProps {
   encounters: EncounterTabItem[];
   activeTab: string;
   onTabChange: (value: string) => void;
-  /** Extra buttons (add, manage) rendered inline — horizontal on all sizes */
+  /** Extra buttons (manage) rendered to the right */
   actions?: React.ReactNode;
+  /** Buttons (add) to render to the left */
+  leftActions?: React.ReactNode;
 }
 
 export function EncounterTabNav({
@@ -29,32 +34,76 @@ export function EncounterTabNav({
   activeTab,
   onTabChange,
   actions,
+  leftActions,
 }: EncounterTabNavProps) {
+  const allTabs = useMemo(() => {
+    return [{ id: "default", encounterName: "Default/Trash" }, ...encounters];
+  }, [encounters]);
+
+  const currentIndex = allTabs.findIndex((t) => t.id === activeTab);
+  const prevTab = allTabs[currentIndex - 1];
+  const nextTab = allTabs[currentIndex + 1];
+
   return (
     <div className="flex items-center gap-2">
-      {/* Mobile: styled dropdown */}
+      {/* Label (Mobile only) */}
       <span className="shrink-0 text-sm font-medium text-muted-foreground md:hidden">
         Encounter:
       </span>
-      <Select value={activeTab} onValueChange={onTabChange}>
-        <SelectTrigger className="h-9 md:hidden">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="default">Default/Trash</SelectItem>
-          {encounters.map((encounter) => (
-            <SelectItem
-              key={encounter.id}
-              value={encounter.id}
-              className={cn(
-                encounter.useDefaultGroups ? "italic opacity-50" : "",
-              )}
-            >
-              {encounter.encounterName}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+
+      {/* Left Actions (Mobile & Desktop) */}
+      {leftActions && (
+        <div className="flex items-center gap-1 [&>button]:h-11 md:[&>button]:h-9">
+          {leftActions}
+        </div>
+      )}
+
+      {/* Mobile: styled dropdown + nav buttons */}
+      <div className="flex flex-1 items-center gap-1 md:hidden">
+        <Select value={activeTab} onValueChange={onTabChange}>
+          <SelectTrigger className="h-11 min-w-[120px] flex-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {allTabs.map((tab) => (
+              <SelectItem
+                key={tab.id}
+                value={tab.id}
+                className={cn(
+                  (tab as EncounterTabItem).useDefaultGroups
+                    ? "italic opacity-50"
+                    : "",
+                )}
+              >
+                {tab.encounterName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-11 w-11"
+            disabled={!prevTab}
+            onClick={() => prevTab && onTabChange(prevTab.id)}
+            aria-label="Previous encounter"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-11 w-11"
+            disabled={!nextTab}
+            onClick={() => nextTab && onTabChange(nextTab.id)}
+            aria-label="Next encounter"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
 
       {/* Desktop: tabs */}
       <TabsList className="hidden h-auto flex-wrap md:inline-flex">
@@ -72,7 +121,12 @@ export function EncounterTabNav({
         ))}
       </TabsList>
 
-      {actions && <div className="flex items-center gap-1">{actions}</div>}
+      {/* Right Actions (Mobile & Desktop) */}
+      {actions && (
+        <div className="flex items-center gap-1 [&>button]:h-11 md:[&>button]:h-9">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }
