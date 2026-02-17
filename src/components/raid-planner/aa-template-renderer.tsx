@@ -374,7 +374,7 @@ export function AATemplateRenderer({
     }
 
     return (
-      <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
+      <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
         {parts}
       </pre>
     );
@@ -483,7 +483,7 @@ export function AATemplatePreview({
   );
 
   return (
-    <pre className="whitespace-pre-wrap rounded-lg border bg-card p-3 font-mono text-sm">
+    <pre className="whitespace-pre-wrap rounded-lg border bg-card p-3 font-sans text-sm">
       {output}
     </pre>
   );
