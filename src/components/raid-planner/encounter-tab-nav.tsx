@@ -47,8 +47,8 @@ export function EncounterTabNav({
   return (
     <div className="flex w-full items-center gap-2 rounded-xl bg-muted/40 p-1.5 ring-1 ring-border/50 md:bg-transparent md:p-0 md:ring-0">
       {/* Label (Mobile only) */}
-      <span className="ml-1 shrink-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 md:hidden">
-        Enc:
+      <span className="ml-1 shrink-0 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80 md:hidden">
+        Encounter:
       </span>
 
       {/* Left Actions (Mobile & Desktop) */}
