@@ -45,10 +45,10 @@ export function EncounterTabNav({
   const nextTab = allTabs[currentIndex + 1];
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full items-center gap-2 rounded-xl bg-muted/40 p-1.5 ring-1 ring-border/50 md:bg-transparent md:p-0 md:ring-0">
       {/* Label (Mobile only) */}
-      <span className="shrink-0 text-sm font-medium text-muted-foreground md:hidden">
-        Encounter:
+      <span className="ml-1 shrink-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 md:hidden">
+        Enc:
       </span>
 
       {/* Left Actions (Mobile & Desktop) */}
@@ -59,9 +59,9 @@ export function EncounterTabNav({
       )}
 
       {/* Mobile: styled dropdown + nav buttons */}
-      <div className="flex flex-1 items-center gap-1 md:hidden">
+      <div className="flex flex-1 items-center gap-1.5 md:hidden">
         <Select value={activeTab} onValueChange={onTabChange}>
-          <SelectTrigger className="h-11 min-w-[120px] flex-1">
+          <SelectTrigger className="h-11 min-w-[100px] flex-1 bg-background shadow-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -81,11 +81,11 @@ export function EncounterTabNav({
           </SelectContent>
         </Select>
 
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           <Button
             variant="outline"
             size="icon"
-            className="h-11 w-11"
+            className="h-11 w-11 bg-background shadow-sm"
             disabled={!prevTab}
             onClick={() => prevTab && onTabChange(prevTab.id)}
             aria-label="Previous encounter"
@@ -95,7 +95,7 @@ export function EncounterTabNav({
           <Button
             variant="outline"
             size="icon"
-            className="h-11 w-11"
+            className="h-11 w-11 bg-background shadow-sm"
             disabled={!nextTab}
             onClick={() => nextTab && onTabChange(nextTab.id)}
             aria-label="Next encounter"
