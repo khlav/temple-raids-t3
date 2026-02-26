@@ -9,7 +9,9 @@ import {
   Pencil,
   Check,
   X,
-  ClipboardCopy,
+  Download,
+  ChevronDown,
+  Zap,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -25,6 +27,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { api } from "~/trpc/react";
 import { useToast } from "~/hooks/use-toast";
 import {
@@ -46,7 +62,7 @@ interface RaidPlanHeaderProps {
   isPublic?: boolean;
   onTogglePublic?: (isPublic: boolean) => void;
   onZoneUpdate?: () => void;
-  onExportAllAA?: () => void;
+  onExportAllAA?: (categoryName: string) => void | Promise<void>;
   isExportingAA?: boolean;
 }
 
@@ -71,6 +87,8 @@ export function RaidPlanHeader({
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(name);
   const [editedZoneId, setEditedZoneId] = useState(zoneId);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [categoryName, setCategoryName] = useState(name);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus input when editing starts
@@ -259,19 +277,91 @@ export function RaidPlanHeader({
 
         <div className="flex items-center gap-2">
           {onExportAllAA && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportAllAA}
-              disabled={isExportingAA}
-            >
-              {isExportingAA ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <ClipboardCopy className="mr-1.5 h-4 w-4" />
-              )}
-              Copy AA Import
-            </Button>
+            <>
+              <div className="flex">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCategoryName(name);
+                    setExportDialogOpen(true);
+                  }}
+                  disabled={isExportingAA}
+                  className="rounded-r-none border-r-0"
+                >
+                  {isExportingAA ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-1.5 h-4 w-4" />
+                  )}
+                  Export Encoded AA
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isExportingAA}
+                      className="rounded-l-none px-2"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => void onExportAllAA(name)}>
+                      <Zap className="mr-2 h-3.5 w-3.5" />
+                      Quick Export
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <Dialog
+                open={exportDialogOpen}
+                onOpenChange={setExportDialogOpen}
+              >
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Export Encoded AA</DialogTitle>
+                    <DialogDescription>
+                      Set the category name that will appear in AngryEra.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2 py-2">
+                    <Input
+                      id="aa-category-name"
+                      value={categoryName}
+                      onChange={(e) => setCategoryName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && categoryName.trim()) {
+                          setExportDialogOpen(false);
+                          void onExportAllAA(categoryName.trim());
+                        }
+                      }}
+                      placeholder={name}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setExportDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setExportDialogOpen(false);
+                        void onExportAllAA(categoryName.trim() || name);
+                      }}
+                      disabled={isExportingAA}
+                    >
+                      <Download className="mr-1.5 h-4 w-4" />
+                      Export
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
           )}
 
           <AlertDialog
