@@ -376,17 +376,17 @@ export function RaidPlanHeader({
                   activeTooltip={
                     <div className="flex w-fit flex-col gap-0.5 whitespace-nowrap">
                       <span className="font-bold">Live Updates</span>
-                      <span className="text-xs">Syncing real-time changes</span>
-                      <span className="text-xs">from other users.</span>
+                      <span className="text-xs">
+                        Syncing near-real-time updates from other users.
+                      </span>
                     </div>
                   }
                   inactiveTooltip={
                     <div className="flex w-fit flex-col gap-0.5 whitespace-nowrap">
                       <span className="font-bold">Polling Paused</span>
                       <span className="text-xs">
-                        No updates in the last 5 minutes.
+                        No updates in the last 5 minutes. Click to resume.
                       </span>
-                      <span className="text-xs">Click to resume.</span>
                     </div>
                   }
                 />
