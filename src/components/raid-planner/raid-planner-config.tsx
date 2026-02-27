@@ -34,7 +34,15 @@ import {
   Pencil,
   Check,
   X,
+  FolderOpen,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { AATemplateEditorDialog } from "./aa-template-editor-dialog";
 import { getGroupCount } from "./constants";
 
@@ -44,7 +52,15 @@ interface TemplateEncounter {
   encounterKey: string;
   encounterName: string;
   sortOrder: number;
+  groupId: string | null;
   aaTemplate: string | null;
+}
+
+interface TemplateEncounterGroup {
+  id: string;
+  templateId: string;
+  groupName: string;
+  sortOrder: number;
 }
 
 interface Template {
@@ -56,6 +72,7 @@ interface Template {
   sortOrder: number;
   defaultAATemplate: string | null;
   encounters: TemplateEncounter[];
+  encounterGroups: TemplateEncounterGroup[];
 }
 
 interface ZoneRow {
@@ -105,6 +122,10 @@ export function RaidPlannerConfig() {
     const [deleteEncounterId, setDeleteEncounterId] = useState<string | null>(
       null,
     );
+    const [newGroupName, setNewGroupName] = useState("");
+    const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+    const [editingGroupName, setEditingGroupName] = useState("");
+    const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
     // AA dialog state
     const [aaDialogContext, setAADialogContext] = useState<{
       type: "default" | "encounter";
@@ -200,6 +221,7 @@ export function RaidPlannerConfig() {
                   encounterKey,
                   encounterName: variables.encounterName,
                   sortOrder: maxSort + 1,
+                  groupId: variables.groupId ?? null,
                   aaTemplate: null,
                   includeAAByDefault: false,
                 },
@@ -339,6 +361,39 @@ export function RaidPlannerConfig() {
         },
       });
 
+    const createGroup =
+      api.raidPlanTemplate.createTemplateEncounterGroup.useMutation({
+        onSuccess: () => void utils.raidPlanTemplate.getAll.invalidate(),
+        onError: (error) =>
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          }),
+      });
+
+    const updateGroup =
+      api.raidPlanTemplate.updateTemplateEncounterGroup.useMutation({
+        onSuccess: () => void utils.raidPlanTemplate.getAll.invalidate(),
+        onError: (error) =>
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          }),
+      });
+
+    const deleteGroup =
+      api.raidPlanTemplate.deleteTemplateEncounterGroup.useMutation({
+        onSuccess: () => void utils.raidPlanTemplate.getAll.invalidate(),
+        onError: (error) =>
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          }),
+      });
+
     const handleAddEncounter = async (e: React.FormEvent) => {
       e.preventDefault();
       const name = newEncounterName.trim();
@@ -382,31 +437,27 @@ export function RaidPlannerConfig() {
       });
     };
 
-    const handleMoveEncounter = (
+    const handleMoveEncounterInList = (
       encounter: TemplateEncounter,
       direction: "up" | "down",
+      list: TemplateEncounter[],
     ) => {
-      if (!zone.template) return;
-      const encounters = [...zone.template.encounters].sort(
-        (a, b) => a.sortOrder - b.sortOrder,
-      );
-      const idx = encounters.findIndex((e) => e.id === encounter.id);
+      const sorted = [...list].sort((a, b) => a.sortOrder - b.sortOrder);
+      const idx = sorted.findIndex((e) => e.id === encounter.id);
       if (
         (direction === "up" && idx === 0) ||
-        (direction === "down" && idx === encounters.length - 1)
+        (direction === "down" && idx === sorted.length - 1)
       ) {
         return;
       }
-
       const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-      const updated = encounters.map((e, i) => {
+      const updated = sorted.map((e, i) => {
         if (i === idx)
-          return { id: e.id, sortOrder: encounters[swapIdx]!.sortOrder };
+          return { id: e.id, sortOrder: sorted[swapIdx]!.sortOrder };
         if (i === swapIdx)
-          return { id: e.id, sortOrder: encounters[idx]!.sortOrder };
+          return { id: e.id, sortOrder: sorted[idx]!.sortOrder };
         return { id: e.id, sortOrder: e.sortOrder };
       });
-
       reorderEncounters.mutate({ encounters: updated });
     };
 
@@ -474,9 +525,86 @@ export function RaidPlannerConfig() {
       }
     };
 
+    const handleAddGroup = (e: React.FormEvent) => {
+      e.preventDefault();
+      const name = newGroupName.trim();
+      if (!name || !zone.template) return;
+      createGroup.mutate({ templateId: zone.template.id, groupName: name });
+      setNewGroupName("");
+    };
+
+    const handleRenameGroupSubmit = (groupId: string) => {
+      const name = editingGroupName.trim();
+      if (!name) return;
+      updateGroup.mutate({ groupId, groupName: name });
+      setEditingGroupId(null);
+    };
+
+    const handleDeleteGroupConfirm = (mode: "promote" | "deleteChildren") => {
+      if (!deleteGroupId) return;
+      deleteGroup.mutate({ groupId: deleteGroupId, mode });
+      setDeleteGroupId(null);
+    };
+
+    const handleEncounterGroupChange = (
+      encounterId: string,
+      newGroupId: string | null,
+    ) => {
+      const enc = sortedEncounters.find((e) => e.id === encounterId);
+      if (!enc) return;
+      reorderEncounters.mutate({
+        encounters: [
+          { id: encounterId, sortOrder: enc.sortOrder, groupId: newGroupId },
+        ],
+      });
+    };
+
+    const sortedGroups = zone.template
+      ? [...zone.template.encounterGroups].sort(
+          (a, b) => a.sortOrder - b.sortOrder,
+        )
+      : [];
+
     const sortedEncounters = zone.template
       ? [...zone.template.encounters].sort((a, b) => a.sortOrder - b.sortOrder)
       : [];
+
+    // Build display: interleave groups and ungrouped encounters by sortOrder
+    type DisplayGroup = {
+      kind: "group";
+      group: TemplateEncounterGroup;
+      encounters: TemplateEncounter[];
+    };
+    type DisplayEnc = { kind: "encounter"; encounter: TemplateEncounter };
+    type DisplayItem = DisplayGroup | DisplayEnc;
+
+    const groupIds = new Set(sortedGroups.map((g) => g.id));
+    const ungroupedEncs = sortedEncounters.filter(
+      (e) => !e.groupId || !groupIds.has(e.groupId),
+    );
+    const byGroup = new Map<string, TemplateEncounter[]>(
+      sortedGroups.map((g) => [g.id, []]),
+    );
+    for (const enc of sortedEncounters) {
+      if (enc.groupId && byGroup.has(enc.groupId)) {
+        byGroup.get(enc.groupId)!.push(enc);
+      }
+    }
+    const displayItems: DisplayItem[] = [
+      ...ungroupedEncs.map((e) => ({
+        kind: "encounter" as const,
+        encounter: e,
+        sortOrder: e.sortOrder,
+      })),
+      ...sortedGroups.map((g) => ({
+        kind: "group" as const,
+        group: g,
+        encounters: byGroup.get(g.id) ?? [],
+        sortOrder: g.sortOrder,
+      })),
+    ]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(({ sortOrder: _so, ...rest }) => rest as DisplayItem);
 
     return (
       <>
@@ -539,7 +667,6 @@ export function RaidPlannerConfig() {
                 {/* Default/Trash row */}
                 <div className="rounded-md border">
                   <div className="flex items-center gap-2 px-3 py-2">
-                    {/* Placeholder for reorder buttons (not shown for default) */}
                     <div className="w-14" />
                     <span className="flex-1 text-sm text-muted-foreground">
                       Default/Trash
@@ -561,147 +688,454 @@ export function RaidPlannerConfig() {
                     >
                       {zone.template?.defaultAATemplate ? "Edit AA" : "Add AA"}
                     </Button>
-                    {/* Placeholder for delete button (not shown for default) */}
                     <div className="w-7" />
                   </div>
                 </div>
 
-                {/* Encounter rows */}
-                {sortedEncounters.map((encounter, idx) => (
-                  <div key={encounter.id} className="rounded-md border">
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      {/* Reorder buttons */}
-                      <div className="flex">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          disabled={idx === 0 || reorderEncounters.isPending}
-                          onClick={() => handleMoveEncounter(encounter, "up")}
-                        >
-                          <ChevronUp className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          disabled={
-                            idx === sortedEncounters.length - 1 ||
-                            reorderEncounters.isPending
-                          }
-                          onClick={() => handleMoveEncounter(encounter, "down")}
-                        >
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        </Button>
+                {/* Groups and ungrouped encounters interleaved by sortOrder */}
+                {displayItems.map((item) =>
+                  item.kind === "group" ? (
+                    <div
+                      key={item.group.id}
+                      className="overflow-hidden rounded-md border"
+                    >
+                      {/* Group header */}
+                      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2">
+                        <FolderOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        {editingGroupId === item.group.id ? (
+                          <>
+                            <Input
+                              value={editingGroupName}
+                              onChange={(e) =>
+                                setEditingGroupName(e.target.value)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter")
+                                  handleRenameGroupSubmit(item.group.id);
+                                else if (e.key === "Escape")
+                                  setEditingGroupId(null);
+                              }}
+                              className="h-7 flex-1"
+                              autoFocus
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() =>
+                                handleRenameGroupSubmit(item.group.id)
+                              }
+                              disabled={updateGroup.isPending}
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setEditingGroupId(null)}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex-1 text-sm font-medium">
+                              {item.group.groupName}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                setEditingGroupId(item.group.id);
+                                setEditingGroupName(item.group.groupName);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() => setDeleteGroupId(item.group.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
                       </div>
 
-                      {/* Encounter name (editable) */}
-                      {editingId === encounter.id ? (
-                        <>
-                          <Input
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                handleRenameSubmit(encounter.id);
-                              } else if (e.key === "Escape") {
-                                setEditingId(null);
-                              }
-                            }}
-                            className="h-7 flex-1"
-                            autoFocus
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleRenameSubmit(encounter.id)}
-                            disabled={updateEncounter.isPending}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => setEditingId(null)}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
+                      {/* Encounters inside this group */}
+                      {item.encounters.length === 0 ? (
+                        <p className="px-3 py-2 text-xs italic text-muted-foreground">
+                          No encounters assigned to this group
+                        </p>
                       ) : (
-                        <>
-                          <span className="flex-1 text-sm">
-                            {encounter.encounterName}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => {
-                              setEditingId(encounter.id);
-                              setEditingName(encounter.encounterName);
-                            }}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant={
-                              encounter.aaTemplate ? "default" : "warning"
-                            }
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() =>
-                              setAADialogContext({
-                                type: "encounter",
-                                encounterId: encounter.id,
-                                label: encounter.encounterName,
-                                currentTemplate: encounter.aaTemplate ?? "",
-                              })
-                            }
-                          >
-                            {encounter.aaTemplate ? "Edit AA" : "Add AA"}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteEncounterId(encounter.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
+                        <div className="divide-y">
+                          {item.encounters.map((encounter, encIdx) => (
+                            <div
+                              key={encounter.id}
+                              className="flex items-center gap-2 px-3 py-2"
+                            >
+                              <div className="flex">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  disabled={
+                                    encIdx === 0 || reorderEncounters.isPending
+                                  }
+                                  onClick={() =>
+                                    handleMoveEncounterInList(
+                                      encounter,
+                                      "up",
+                                      item.encounters,
+                                    )
+                                  }
+                                >
+                                  <ChevronUp className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  disabled={
+                                    encIdx === item.encounters.length - 1 ||
+                                    reorderEncounters.isPending
+                                  }
+                                  onClick={() =>
+                                    handleMoveEncounterInList(
+                                      encounter,
+                                      "down",
+                                      item.encounters,
+                                    )
+                                  }
+                                >
+                                  <ChevronDown className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                              {editingId === encounter.id ? (
+                                <>
+                                  <Input
+                                    value={editingName}
+                                    onChange={(e) =>
+                                      setEditingName(e.target.value)
+                                    }
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter")
+                                        handleRenameSubmit(encounter.id);
+                                      else if (e.key === "Escape")
+                                        setEditingId(null);
+                                    }}
+                                    className="h-7 flex-1"
+                                    autoFocus
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() =>
+                                      handleRenameSubmit(encounter.id)
+                                    }
+                                    disabled={updateEncounter.isPending}
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => setEditingId(null)}
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="min-w-0 flex-1 truncate text-sm">
+                                    {encounter.encounterName}
+                                  </span>
+                                  {sortedGroups.length > 0 && (
+                                    <Select
+                                      value={encounter.groupId ?? "none"}
+                                      onValueChange={(v) =>
+                                        handleEncounterGroupChange(
+                                          encounter.id,
+                                          v === "none" ? null : v,
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger className="h-7 w-28 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">
+                                          No group
+                                        </SelectItem>
+                                        {sortedGroups.map((g) => (
+                                          <SelectItem key={g.id} value={g.id}>
+                                            {g.groupName}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => {
+                                      setEditingId(encounter.id);
+                                      setEditingName(encounter.encounterName);
+                                    }}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant={
+                                      encounter.aaTemplate
+                                        ? "default"
+                                        : "warning"
+                                    }
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    onClick={() =>
+                                      setAADialogContext({
+                                        type: "encounter",
+                                        encounterId: encounter.id,
+                                        label: encounter.encounterName,
+                                        currentTemplate:
+                                          encounter.aaTemplate ?? "",
+                                      })
+                                    }
+                                  >
+                                    {encounter.aaTemplate
+                                      ? "Edit AA"
+                                      : "Add AA"}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-destructive hover:text-destructive"
+                                    onClick={() =>
+                                      setDeleteEncounterId(encounter.id)
+                                    }
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  ) : (
+                    /* Ungrouped encounter */
+                    <div key={item.encounter.id} className="rounded-md border">
+                      <div className="flex items-center gap-2 px-3 py-2">
+                        <div className="flex">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            disabled={
+                              ungroupedEncs.findIndex(
+                                (e) => e.id === item.encounter.id,
+                              ) === 0 || reorderEncounters.isPending
+                            }
+                            onClick={() =>
+                              handleMoveEncounterInList(
+                                item.encounter,
+                                "up",
+                                ungroupedEncs,
+                              )
+                            }
+                          >
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            disabled={
+                              ungroupedEncs.findIndex(
+                                (e) => e.id === item.encounter.id,
+                              ) ===
+                                ungroupedEncs.length - 1 ||
+                              reorderEncounters.isPending
+                            }
+                            onClick={() =>
+                              handleMoveEncounterInList(
+                                item.encounter,
+                                "down",
+                                ungroupedEncs,
+                              )
+                            }
+                          >
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        {editingId === item.encounter.id ? (
+                          <>
+                            <Input
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter")
+                                  handleRenameSubmit(item.encounter.id);
+                                else if (e.key === "Escape") setEditingId(null);
+                              }}
+                              className="h-7 flex-1"
+                              autoFocus
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() =>
+                                handleRenameSubmit(item.encounter.id)
+                              }
+                              disabled={updateEncounter.isPending}
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setEditingId(null)}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="min-w-0 flex-1 truncate text-sm">
+                              {item.encounter.encounterName}
+                            </span>
+                            {sortedGroups.length > 0 && (
+                              <Select
+                                value="none"
+                                onValueChange={(v) =>
+                                  handleEncounterGroupChange(
+                                    item.encounter.id,
+                                    v === "none" ? null : v,
+                                  )
+                                }
+                              >
+                                <SelectTrigger className="h-7 w-28 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No group</SelectItem>
+                                  {sortedGroups.map((g) => (
+                                    <SelectItem key={g.id} value={g.id}>
+                                      {g.groupName}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                setEditingId(item.encounter.id);
+                                setEditingName(item.encounter.encounterName);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant={
+                                item.encounter.aaTemplate
+                                  ? "default"
+                                  : "warning"
+                              }
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() =>
+                                setAADialogContext({
+                                  type: "encounter",
+                                  encounterId: item.encounter.id,
+                                  label: item.encounter.encounterName,
+                                  currentTemplate:
+                                    item.encounter.aaTemplate ?? "",
+                                })
+                              }
+                            >
+                              {item.encounter.aaTemplate ? "Edit AA" : "Add AA"}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() =>
+                                setDeleteEncounterId(item.encounter.id)
+                              }
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ),
+                )}
               </div>
 
-              {/* Add encounter form */}
-              <form
-                onSubmit={handleAddEncounter}
-                className="flex items-center gap-2 pt-2"
-              >
-                <Input
-                  placeholder="Encounter name"
-                  value={newEncounterName}
-                  onChange={(e) => setNewEncounterName(e.target.value)}
-                  className="h-8 flex-1"
-                />
-                <Button
-                  type="submit"
-                  variant="secondary"
-                  size="sm"
-                  disabled={
-                    !newEncounterName.trim() ||
-                    addEncounter.isPending ||
-                    upsertTemplate.isPending
-                  }
+              {/* Add encounter + Add group forms */}
+              <div className="flex flex-col gap-2 pt-2">
+                <form
+                  onSubmit={handleAddEncounter}
+                  className="flex items-center gap-2"
                 >
-                  <Plus className="mr-1 h-3.5 w-3.5" />
-                  Add
-                </Button>
-              </form>
+                  <Input
+                    placeholder="Encounter name"
+                    value={newEncounterName}
+                    onChange={(e) => setNewEncounterName(e.target.value)}
+                    className="h-8 flex-1"
+                  />
+                  <Button
+                    type="submit"
+                    variant="secondary"
+                    size="sm"
+                    disabled={
+                      !newEncounterName.trim() ||
+                      addEncounter.isPending ||
+                      upsertTemplate.isPending
+                    }
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Add Encounter
+                  </Button>
+                </form>
+                {zone.template && (
+                  <form
+                    onSubmit={handleAddGroup}
+                    className="flex items-center gap-2"
+                  >
+                    <Input
+                      placeholder="Group name (e.g. Spider Wing)"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      className="h-8 flex-1"
+                    />
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      size="sm"
+                      disabled={!newGroupName.trim() || createGroup.isPending}
+                    >
+                      <FolderOpen className="mr-1 h-3.5 w-3.5" />
+                      Add Group
+                    </Button>
+                  </form>
+                )}
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -728,6 +1162,37 @@ export function RaidPlannerConfig() {
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Group delete confirmation dialog */}
+        <AlertDialog
+          open={!!deleteGroupId}
+          onOpenChange={(open) => {
+            if (!open) setDeleteGroupId(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete group</AlertDialogTitle>
+              <AlertDialogDescription>
+                What should happen to encounters in this group?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleDeleteGroupConfirm("promote")}
+              >
+                Move encounters to top-level
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => handleDeleteGroupConfirm("deleteChildren")}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete encounters too
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
