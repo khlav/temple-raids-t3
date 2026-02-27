@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronLeft, Flag } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -16,6 +16,12 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { cn } from "~/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface EncounterGroup {
   id: string;
@@ -38,6 +44,7 @@ interface EncounterSidebarProps {
   onTabChange: (value: string) => void;
   actions?: React.ReactNode;
   leftActions?: React.ReactNode;
+  assignmentLabelsMap?: Map<string, string[]>;
 }
 
 export function EncounterSidebar({
@@ -47,6 +54,7 @@ export function EncounterSidebar({
   onTabChange,
   actions,
   leftActions,
+  assignmentLabelsMap = new Map(),
 }: EncounterSidebarProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     () => new Set(encounterGroups.map((g) => g.id)),
@@ -135,17 +143,49 @@ export function EncounterSidebar({
           {actions}
         </div>
         {/* Default/Trash — always first */}
-        <button
-          onClick={() => onTabChange("default")}
-          className={cn(
-            "w-full rounded-md px-2 py-1 text-left text-xs font-medium",
-            activeTab === "default"
-              ? "bg-accent text-accent-foreground"
-              : "hover:bg-accent/50",
-          )}
-        >
-          Default/Trash
-        </button>
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => onTabChange("default")}
+                className={cn(
+                  "group/item relative flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-xs font-medium outline-none transition-all",
+                  activeTab === "default"
+                    ? "bg-accent text-accent-foreground"
+                    : "hover:bg-accent/50",
+                )}
+              >
+                <span
+                  className={cn(
+                    "min-w-0 truncate whitespace-nowrap transition-colors duration-200",
+                    assignmentLabelsMap.has("default") &&
+                      "font-semibold text-yellow-500",
+                  )}
+                >
+                  Default/Trash
+                </span>
+                {assignmentLabelsMap.has("default") && (
+                  <Flag className="h-3 w-3 shrink-0 text-yellow-500 transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110" />
+                )}
+              </button>
+            </TooltipTrigger>
+            {assignmentLabelsMap.has("default") && (
+              <TooltipContent
+                side="right"
+                className="dark border-none bg-secondary text-muted-foreground"
+              >
+                <div className="text-xs">
+                  <p className="mb-1 font-semibold">Assignments:</p>
+                  <ul className="list-disc pl-3">
+                    {assignmentLabelsMap.get("default")?.map((label, i) => (
+                      <li key={i}>{label}</li>
+                    ))}
+                  </ul>
+                </div>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
 
         {/* Sorted tree */}
         {sortedTreeItems.map((item) =>
@@ -177,36 +217,104 @@ export function EncounterSidebar({
               </CollapsibleTrigger>
               <CollapsibleContent className="flex flex-col gap-0.5 pl-3 pt-0.5">
                 {item.children.map((enc) => (
-                  <button
-                    key={enc.id}
-                    onClick={() => onTabChange(enc.id)}
-                    className={cn(
-                      "w-full rounded-md px-2 py-1 text-left text-xs",
-                      enc.useDefaultGroups && "italic text-muted-foreground",
-                      enc.id === activeTab
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent/50",
-                    )}
-                  >
-                    {enc.encounterName}
-                  </button>
+                  <TooltipProvider key={enc.id} delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => onTabChange(enc.id)}
+                          className={cn(
+                            "group/item relative flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-xs outline-none transition-all",
+                            enc.useDefaultGroups &&
+                              "italic text-muted-foreground",
+                            enc.id === activeTab
+                              ? "bg-accent text-accent-foreground"
+                              : "hover:bg-accent/50",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "min-w-0 truncate whitespace-nowrap transition-colors duration-200",
+                              assignmentLabelsMap.has(enc.id) &&
+                                "font-semibold text-yellow-500",
+                            )}
+                          >
+                            {enc.encounterName}
+                          </span>
+                          {assignmentLabelsMap.has(enc.id) && (
+                            <Flag className="h-3 w-3 shrink-0 text-yellow-500 transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      {assignmentLabelsMap.has(enc.id) && (
+                        <TooltipContent
+                          side="right"
+                          className="dark border-none bg-secondary text-muted-foreground"
+                        >
+                          <div className="text-xs">
+                            <p className="mb-1 font-semibold">Assignments:</p>
+                            <ul className="list-disc pl-3">
+                              {assignmentLabelsMap
+                                .get(enc.id)
+                                ?.map((label, i) => (
+                                  <li key={i}>{label}</li>
+                                ))}
+                            </ul>
+                          </div>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
                 ))}
               </CollapsibleContent>
             </Collapsible>
           ) : (
-            <button
-              key={item.enc.id}
-              onClick={() => onTabChange(item.enc.id)}
-              className={cn(
-                "w-full rounded-md px-2 py-1 text-left text-xs",
-                item.enc.useDefaultGroups && "italic text-muted-foreground",
-                item.enc.id === activeTab
-                  ? "bg-accent text-accent-foreground"
-                  : "hover:bg-accent/50",
-              )}
-            >
-              {item.enc.encounterName}
-            </button>
+            <TooltipProvider key={item.enc.id} delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onTabChange(item.enc.id)}
+                    className={cn(
+                      "group/item relative flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-xs outline-none transition-all",
+                      item.enc.useDefaultGroups &&
+                        "italic text-muted-foreground",
+                      item.enc.id === activeTab
+                        ? "bg-accent text-accent-foreground"
+                        : "hover:bg-accent/50",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "min-w-0 truncate whitespace-nowrap transition-colors duration-200",
+                        assignmentLabelsMap.has(item.enc.id) &&
+                          "font-semibold text-yellow-500",
+                      )}
+                    >
+                      {item.enc.encounterName}
+                    </span>
+                    {assignmentLabelsMap.has(item.enc.id) && (
+                      <Flag className="h-3 w-3 shrink-0 text-yellow-500 transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                {assignmentLabelsMap.has(item.enc.id) && (
+                  <TooltipContent
+                    side="right"
+                    className="dark border-none bg-secondary text-muted-foreground"
+                  >
+                    <div className="text-xs">
+                      <p className="mb-1 font-semibold">Assignments:</p>
+                      <ul className="list-disc pl-3">
+                        {assignmentLabelsMap
+                          .get(item.enc.id)
+                          ?.map((label, i) => (
+                            <li key={i}>{label}</li>
+                          ))}
+                      </ul>
+                    </div>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           ),
         )}
       </div>
@@ -225,20 +333,58 @@ export function EncounterSidebar({
             </span>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="default">Default/Trash</SelectItem>
+            <SelectItem value="default">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    assignmentLabelsMap.has("default") &&
+                      "font-semibold text-yellow-500",
+                  )}
+                >
+                  Default/Trash
+                </span>
+                {assignmentLabelsMap.has("default") && (
+                  <Flag className="h-3 w-3 shrink-0 text-yellow-500" />
+                )}
+              </div>
+            </SelectItem>
             {sortedTreeItems.map((item) =>
               item.type === "group" ? (
                 <SelectGroup key={item.group.id}>
                   <SelectLabel>{item.group.groupName}</SelectLabel>
                   {item.children.map((enc) => (
                     <SelectItem key={enc.id} value={enc.id} className="pl-6">
-                      {enc.encounterName}
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            assignmentLabelsMap.has(enc.id) &&
+                              "font-semibold text-yellow-500",
+                          )}
+                        >
+                          {enc.encounterName}
+                        </span>
+                        {assignmentLabelsMap.has(enc.id) && (
+                          <Flag className="h-3 w-3 shrink-0 text-yellow-500" />
+                        )}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectGroup>
               ) : (
                 <SelectItem key={item.enc.id} value={item.enc.id}>
-                  {item.enc.encounterName}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        assignmentLabelsMap.has(item.enc.id) &&
+                          "font-semibold text-yellow-500",
+                      )}
+                    >
+                      {item.enc.encounterName}
+                    </span>
+                    {assignmentLabelsMap.has(item.enc.id) && (
+                      <Flag className="h-3 w-3 shrink-0 text-yellow-500" />
+                    )}
+                  </div>
                 </SelectItem>
               ),
             )}

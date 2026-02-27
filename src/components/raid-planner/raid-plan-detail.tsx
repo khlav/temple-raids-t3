@@ -429,21 +429,14 @@ export function RaidPlanDetail({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div>
-              <p className="mb-2 text-base font-semibold">
+            <div className="relative">
+              <p className="mb-2 text-lg font-semibold">
                 {activeTab === "default"
                   ? "Default/Trash"
                   : (plan.encounters.find((e) => e.id === activeTab)
                       ?.encounterName ?? "Encounter")}
               </p>
-              <div
-                className={cn(
-                  "grid gap-6",
-                  showDefaultAARef && activeTab !== "default"
-                    ? "lg:grid-cols-[3fr_2fr_0.6fr]"
-                    : "lg:grid-cols-[3fr_2fr]",
-                )}
-              >
+              <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
                 {/* Groups Column (order 2 on mobile, 1 on desktop) */}
                 <div className="order-2 lg:order-1">
                   {/* Default Tab */}
@@ -820,48 +813,48 @@ export function RaidPlanDetail({
                     </TabsContent>
                   ))}
                 </div>
-
-                {/* 3rd column: Default AA Reference (compact, read-only) */}
-                {showDefaultAARef && activeTab !== "default" && (
-                  <div className="order-3 lg:order-3">
-                    <div className="sticky top-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Default AA Reference
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={() => setShowDefaultAARef(false)}
-                          className="rounded p-0.5 text-muted-foreground hover:bg-muted"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                      {plan.useDefaultAA && plan.defaultAATemplate ? (
-                        <div className="w-[133.33%] origin-top-left scale-75">
-                          <AAPanel
-                            template={plan.defaultAATemplate}
-                            characters={plan.characters as RaidPlanCharacter[]}
-                            slotAssignments={plan.aaSlotAssignments.filter(
-                              (a) => a.raidPlanId === planId,
-                            )}
-                            contextId={`${planId}-ref`}
-                            contextLabel="Default (Reference)"
-                            zoneName={zoneName}
-                            readOnly
-                          />
-                        </div>
-                      ) : (
-                        <div className="rounded border border-dashed p-3">
-                          <p className="text-center text-[11px] text-muted-foreground">
-                            No default AA configured
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
+
+              {/* Default AA Reference — floats to the right of the grid */}
+              {showDefaultAARef && activeTab !== "default" && (
+                <div className="absolute left-full top-0 ml-6 w-64">
+                  <div className="sticky top-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Default AA Reference
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setShowDefaultAARef(false)}
+                        className="rounded p-0.5 text-muted-foreground hover:bg-muted"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    {plan.useDefaultAA && plan.defaultAATemplate ? (
+                      <div className="w-[133.33%] origin-top-left scale-75">
+                        <AAPanel
+                          template={plan.defaultAATemplate}
+                          characters={plan.characters as RaidPlanCharacter[]}
+                          slotAssignments={plan.aaSlotAssignments.filter(
+                            (a) => a.raidPlanId === planId,
+                          )}
+                          contextId={`${planId}-ref`}
+                          contextLabel="Default (Reference)"
+                          zoneName={zoneName}
+                          readOnly
+                        />
+                      </div>
+                    ) : (
+                      <div className="rounded border border-dashed p-3">
+                        <p className="text-center text-[11px] text-muted-foreground">
+                          No default AA configured
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Drag overlay for shared DndContext */}

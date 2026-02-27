@@ -330,6 +330,47 @@ export const raidPlanTemplateRouter = createTRPCRouter({
     }),
 
   /**
+   * Bulk reorder encounter groups and encounters together.
+   * Updates group sortOrders and encounter sortOrders + groupId assignments in one transaction.
+   */
+  reorderEncounterGroups: raidManagerProcedure
+    .input(
+      z.object({
+        groups: z.array(
+          z.object({
+            id: z.string().uuid(),
+            sortOrder: z.number().int(),
+          }),
+        ),
+        encounters: z.array(
+          z.object({
+            id: z.string().uuid(),
+            sortOrder: z.number().int(),
+            groupId: z.string().uuid().nullable(),
+          }),
+        ),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.transaction(async (tx) => {
+        for (const g of input.groups) {
+          await tx
+            .update(raidPlanTemplateEncounterGroups)
+            .set({ sortOrder: g.sortOrder })
+            .where(eq(raidPlanTemplateEncounterGroups.id, g.id));
+        }
+        for (const e of input.encounters) {
+          await tx
+            .update(raidPlanTemplateEncounters)
+            .set({ sortOrder: e.sortOrder, groupId: e.groupId })
+            .where(eq(raidPlanTemplateEncounters.id, e.id));
+        }
+      });
+
+      return { success: true };
+    }),
+
+  /**
    * Bulk reorder encounters. Wrapped in a transaction.
    */
   reorderEncounters: raidManagerProcedure

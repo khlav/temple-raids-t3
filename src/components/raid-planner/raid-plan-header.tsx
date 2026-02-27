@@ -238,7 +238,7 @@ export function RaidPlanHeader({
             <div className="flex items-center gap-2">
               <Badge
                 variant="secondary"
-                className="pointer-events-none px-2.5 py-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground"
+                className="pointer-events-none px-2 py-0.5 text-muted-foreground"
               >
                 Plan
               </Badge>
@@ -287,7 +287,7 @@ export function RaidPlanHeader({
                       <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
                         <Badge
                           variant="secondary"
-                          className="pointer-events-none px-2.5 py-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground"
+                          className="pointer-events-none px-2 py-0.5 text-muted-foreground"
                         >
                           Plan
                         </Badge>
@@ -295,7 +295,7 @@ export function RaidPlanHeader({
                       </h1>
                       <Badge
                         variant="secondary"
-                        className={`pointer-events-none hidden px-2 py-0.5 text-xs font-semibold uppercase tracking-wider lg:inline-flex ${ZONE_BADGE_CLASSES[zoneId] ?? "text-muted-foreground"}`}
+                        className={`pointer-events-none hidden px-2 py-0.5 lg:inline-flex ${ZONE_BADGE_CLASSES[zoneId] ?? "text-muted-foreground"}`}
                       >
                         {zoneName}
                       </Badge>
@@ -303,7 +303,7 @@ export function RaidPlanHeader({
                   </TooltipTrigger>
                   {(startAt ?? event) && (
                     <TooltipContent
-                      side="bottom"
+                      side="top"
                       className="dark border-none bg-secondary text-muted-foreground"
                     >
                       {startAt ? (

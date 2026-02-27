@@ -1,14 +1,21 @@
 "use client";
 
-import { useState, useId, useEffect, useMemo, useCallback } from "react";
+import {
+  useState,
+  useId,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import {
   ChevronDown,
   FolderMinus,
   FolderOpen,
   GripVertical,
+  ListTree,
   Loader2,
   Pencil,
-  Settings2,
   Trash2,
   Plus,
   Check,
@@ -19,13 +26,18 @@ import {
   DragOverlay,
   closestCenter,
   KeyboardSensor,
+  MeasuringStrategy,
   PointerSensor,
   useDroppable,
   useSensor,
   useSensors,
+  pointerWithin,
+  getFirstCollision,
   type DragStartEvent,
   type DragEndEvent,
   type DragOverEvent,
+  type CollisionDetection,
+  type UniqueIdentifier,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -103,6 +115,8 @@ interface ManageEncountersDialogProps {
   isDeletePending: boolean;
   isAddPending: boolean;
   isGroupPending?: boolean;
+  /** When true (default), renders a compact icon-only ghost button. When false, renders a labeled outline button. */
+  compact?: boolean;
 }
 
 // ── Item ID helpers ────────────────────────────────────────────────────────────
@@ -118,6 +132,18 @@ function parseItemId(
     return { type: "group", id: itemId.slice(6) };
   return null;
 }
+
+function findContainer(items: Items, id: string): string | undefined {
+  if (id in items) return id;
+  return Object.keys(items).find((k) => items[k]!.includes(id));
+}
+
+// ── DndContext measuring config ─────────────────────────────────────────────────
+// Prevents re-measuring droppable rects during active drags, breaking the
+// feedback loop: handleDragOver → setItems → re-render → re-measure → onDragOver
+const MEASURING_CONFIG = {
+  droppable: { strategy: MeasuringStrategy.BeforeDragging },
+};
 
 // ── Build initial items state ──────────────────────────────────────────────────
 
@@ -239,16 +265,15 @@ function DroppableGroupArea({
   isEmpty: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: groupId });
-  if (!isEmpty) return <div ref={setNodeRef} />;
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "ml-4 min-h-[2rem] rounded border border-dashed text-center text-xs leading-8 text-muted-foreground/50 transition-colors",
-        isOver && "border-primary/40 bg-accent/20",
+        "ml-4 min-h-[1.5rem] rounded border border-dashed text-center text-xs leading-6 text-muted-foreground/30 transition-colors",
+        isOver && "border-primary/40 bg-accent/20 text-muted-foreground/50",
       )}
     >
-      {isOver ? "Drop here" : "Empty group"}
+      {isOver ? "Drop here" : isEmpty ? "Empty group" : ""}
     </div>
   );
 }
@@ -309,7 +334,7 @@ function SortableEncounterRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center gap-2 rounded-md border bg-card px-3 py-2",
+        "flex items-center gap-1.5 rounded-md border bg-card px-2 py-1",
         isDragging && "opacity-50",
         indented && "ml-4",
       )}
@@ -317,6 +342,7 @@ function SortableEncounterRow({
       <button
         type="button"
         className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
+        onPointerDown={(e) => e.stopPropagation()}
         {...attributes}
         {...listeners}
       >
@@ -338,7 +364,7 @@ function SortableEncounterRow({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0"
+            className="h-6 w-6 shrink-0"
             onClick={confirmRename}
             disabled={!editValue.trim()}
           >
@@ -347,7 +373,7 @@ function SortableEncounterRow({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0"
+            className="h-6 w-6 shrink-0"
             onClick={cancelEditing}
           >
             <X className="h-3.5 w-3.5" />
@@ -359,7 +385,7 @@ function SortableEncounterRow({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-6 w-6"
             onClick={startEditing}
             disabled={isPending}
           >
@@ -407,6 +433,7 @@ function SortableGroupHeader({
   editingId,
   setEditingId,
   isOver,
+  dragHandleProps,
 }: {
   id: ItemId;
   name: string;
@@ -418,20 +445,10 @@ function SortableGroupHeader({
   editingId: string | null;
   setEditingId: (id: string | null) => void;
   isOver: boolean;
+  dragHandleProps?: any;
 }) {
   const [editValue, setEditValue] = useState(name);
   const isEditing = editingId === id;
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = { transform: CSS.Transform.toString(transform), transition };
 
   const startEditing = () => {
     setEditValue(name);
@@ -449,19 +466,16 @@ function SortableGroupHeader({
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={cn(
-        "flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2",
-        isDragging && "opacity-50",
+        "flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1",
         isOver && "ring-1 ring-primary/50",
       )}
     >
       <button
         type="button"
         className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
-        {...attributes}
-        {...listeners}
+        onPointerDown={(e) => e.stopPropagation()}
+        {...dragHandleProps}
       >
         <GripVertical className="h-4 w-4" />
       </button>
@@ -482,7 +496,7 @@ function SortableGroupHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0"
+            className="h-6 w-6 shrink-0"
             onClick={confirmRename}
             disabled={!editValue.trim()}
           >
@@ -491,7 +505,7 @@ function SortableGroupHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0"
+            className="h-6 w-6 shrink-0"
             onClick={cancelEditing}
           >
             <X className="h-3.5 w-3.5" />
@@ -503,7 +517,7 @@ function SortableGroupHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-6 w-6"
             onClick={startEditing}
             disabled={isPending}
           >
@@ -539,6 +553,127 @@ function SortableGroupHeader({
   );
 }
 
+// ── SortableGroupSection ───────────────────────────────────────────────────────
+
+function SortableGroupSection({
+  groupId,
+  items,
+  localNames,
+  onDelete,
+  onRename,
+  onMoveToRoot,
+  onToggleCollapse,
+  collapsed,
+  isPending,
+  isDeletePending,
+  isGroupPending,
+  editingId,
+  setEditingId,
+  findContainer,
+  activeId,
+  encounterGroups,
+  encounters,
+}: {
+  groupId: string;
+  items: Items;
+  localNames: LocalNames;
+  onDelete: (id: string) => void;
+  onRename: (itemId: string, n: string) => void;
+  onMoveToRoot: (itemId: string) => void;
+  onToggleCollapse: (groupId: string) => void;
+  collapsed: boolean;
+  isPending: boolean;
+  isDeletePending: boolean;
+  isGroupPending?: boolean;
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
+  findContainer: (id: string) => string | undefined;
+  activeId: string | null;
+  encounterGroups: EncounterGroup[];
+  encounters: Encounter[];
+}) {
+  const itemId = groupItemId(groupId);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: itemId });
+
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  const groupEncs = items[groupId] ?? [];
+  const currentName =
+    localNames.get(itemId) ??
+    encounterGroups.find((g) => g.id === groupId)?.groupName ??
+    "";
+
+  const isBeingDraggedOver =
+    activeId !== null &&
+    !activeId.startsWith("group:") &&
+    findContainer(activeId) === groupId;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn("flex flex-col gap-0.5", isDragging && "opacity-50")}
+    >
+      <SortableGroupHeader
+        id={itemId}
+        name={currentName}
+        collapsed={collapsed}
+        onToggleCollapse={() => onToggleCollapse(groupId)}
+        onDelete={() => onDelete(groupId)}
+        onRename={(n) => onRename(itemId, n)}
+        isPending={isPending || (isGroupPending ?? false)}
+        editingId={editingId}
+        setEditingId={setEditingId}
+        isOver={isBeingDraggedOver}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+
+      {!collapsed && (
+        <div className="flex flex-col gap-0.5">
+          <SortableContext
+            items={groupEncs}
+            strategy={verticalListSortingStrategy}
+          >
+            {groupEncs.map((encItemId) => {
+              const encParsed = parseItemId(encItemId);
+              if (!encParsed || encParsed.type !== "enc") return null;
+              const encId = encParsed.id;
+              const encName =
+                localNames.get(encItemId) ??
+                encounters.find((e) => e.id === encId)?.encounterName ??
+                "";
+              return (
+                <SortableEncounterRow
+                  key={encItemId}
+                  id={encItemId}
+                  name={encName}
+                  indented
+                  onDelete={() => onDelete(encId)}
+                  onRename={(n) => onRename(encItemId, n)}
+                  onMoveToRoot={() => onMoveToRoot(encItemId)}
+                  isPending={isPending || isDeletePending}
+                  editingId={editingId}
+                  setEditingId={setEditingId}
+                />
+              );
+            })}
+          </SortableContext>
+          <DroppableGroupArea
+            groupId={groupId}
+            isEmpty={groupEncs.length === 0}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── ManageEncountersDialog ─────────────────────────────────────────────────────
 
 export function ManageEncountersDialog({
@@ -553,9 +688,11 @@ export function ManageEncountersDialog({
   isDeletePending,
   isAddPending,
   isGroupPending,
+  compact = true,
 }: ManageEncountersDialogProps) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Items>({});
+  const itemsRef = useRef<Items>(items);
   const [initialSnapshot, setInitialSnapshot] = useState("");
   const [localNames, setLocalNames] = useState<LocalNames>(new Map());
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -567,9 +704,18 @@ export function ManageEncountersDialog({
   const [newGroupName, setNewGroupName] = useState("");
   const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
   const dndId = useId();
+  const { setNodeRef: setRootNodeRef } = useDroppable({ id: "root" });
+
+  // Stabilization refs for multi-container dnd-kit pattern
+  const lastOverId = useRef<UniqueIdentifier | null>(null);
+  const recentlyMovedToNewContainer = useRef(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -579,6 +725,7 @@ export function ManageEncountersDialog({
     if (isOpen) {
       const built = buildItems(encounters, encounterGroups);
       setItems(built);
+      itemsRef.current = built;
       setInitialSnapshot(JSON.stringify(built));
       setLocalNames(new Map());
       setEditingId(null);
@@ -589,37 +736,56 @@ export function ManageEncountersDialog({
     setOpen(isOpen);
   };
 
+  const freshItems = useMemo(
+    () => buildItems(encounters, encounterGroups),
+    [encounters, encounterGroups],
+  );
+
   // Sync when encounters/groups change while dialog is open (after add/delete)
   useEffect(() => {
-    if (!open) return;
-    setItems((prev) => {
-      const fresh = buildItems(encounters, encounterGroups);
-      // Preserve local ordering — only add new items / remove deleted ones
-      const allFreshIds = new Set(Object.values(fresh).flat());
-      const allPrevIds = new Set(Object.values(prev).flat());
+    if (!open || activeId) return; // Skip sync during active drag to avoid depth errors
 
-      // If sets match, keep local ordering
-      const sameIds =
-        allFreshIds.size === allPrevIds.size &&
-        [...allFreshIds].every((id) => allPrevIds.has(id));
-      if (sameIds) return prev;
+    const prev = itemsRef.current;
+    const allFreshIds = new Set(Object.values(freshItems).flat());
+    const allPrevIds = new Set(Object.values(prev).flat());
 
-      // Something added or removed — rebuild preserving local order where possible
+    // Only update state if the set of IDs actually changed (add/delete)
+    const sameIds =
+      allFreshIds.size === allPrevIds.size &&
+      [...allFreshIds].every((id) => allPrevIds.has(id));
+
+    if (!sameIds) {
       const next: Items = {};
+      const fresh = freshItems;
+      const allFreshIdsSet = new Set(Object.values(fresh).flat());
+      const currentPrevIdsSet = new Set(Object.values(prev).flat());
+
       for (const [cId, freshIds] of Object.entries(fresh)) {
         const prevIds = prev[cId] ?? [];
-        // Keep existing items that are still valid, then append new ones
-        const kept = prevIds.filter((id) => allFreshIds.has(id));
-        const added = freshIds.filter((id) => !allPrevIds.has(id));
+        const kept = prevIds.filter((id) => allFreshIdsSet.has(id));
+        const added = freshIds.filter((id) => !currentPrevIdsSet.has(id));
         next[cId] = [...kept, ...added];
       }
-      // Remove containers that no longer exist
       for (const cId of Object.keys(prev)) {
         if (!(cId in fresh)) delete next[cId];
       }
-      return next;
+
+      // Final check: is next actually different from prev?
+      const isActuallyDifferent = JSON.stringify(next) !== JSON.stringify(prev);
+      if (isActuallyDifferent) {
+        setItems(next);
+        itemsRef.current = next;
+      }
+    }
+  }, [open, freshItems, activeId]);
+
+  // Clear the "recently moved" flag after paint so collision detection
+  // stops short-circuiting once layout has settled.
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      recentlyMovedToNewContainer.current = false;
     });
-  }, [open, encounters, encounterGroups]);
+  });
 
   const isDirty = useMemo(() => {
     return JSON.stringify(items) !== initialSnapshot || localNames.size > 0;
@@ -627,105 +793,209 @@ export function ManageEncountersDialog({
 
   // ── DnD helpers ─────────────────────────────────────────────────────────────
 
-  const findContainer = useCallback(
-    (id: string): string | undefined => {
-      if (id in items) return id;
-      return Object.keys(items).find((k) => items[k]!.includes(id));
-    },
-    [items],
-  );
+  const findContainerStable = useCallback((id: string) => {
+    return findContainer(itemsRef.current, id);
+  }, []);
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveId(String(active.id));
+    lastOverId.current = null;
+    recentlyMovedToNewContainer.current = false;
   };
 
-  const handleDragOver = useCallback(
-    ({ active, over }: DragOverEvent) => {
-      if (!over) return;
-      const activeId = String(active.id);
-      const overId = String(over.id);
+  const handleDragOver = useCallback(({ active, over }: DragOverEvent) => {
+    if (!over) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
-      const activeContainer = findContainer(activeId);
-      if (!activeContainer) return;
+    setItems((prev) => {
+      const activeContainer = findContainer(prev, activeId);
+      if (!activeContainer) return prev;
 
       // Determine target container
       let targetContainer: string;
-      if (overId.startsWith("group:")) {
-        // Hovering over a group header → target is that group's container
-        const gid = overId.slice(6);
-        targetContainer = gid in items ? gid : "root";
-      } else if (overId in items) {
+      if (overId in prev) {
         targetContainer = overId;
       } else {
-        targetContainer = findContainer(overId) ?? "root";
+        targetContainer = findContainer(prev, overId) ?? "root";
       }
 
-      if (activeContainer === targetContainer) return;
-      // Group headers can only live in root
-      if (activeId.startsWith("group:")) return;
+      if (activeContainer === targetContainer) {
+        // Handle sorting within the same container
+        const itemsInContainer = prev[activeContainer] ?? [];
+        const oldIndex = itemsInContainer.indexOf(activeId);
+        const newIndex = itemsInContainer.indexOf(overId);
+
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const next = {
+            ...prev,
+            [activeContainer]: arrayMove(itemsInContainer, oldIndex, newIndex),
+          };
+          itemsRef.current = next;
+          return next;
+        }
+        return prev;
+      }
+
+      // Group headers (sections) can only live in root.
+      // Dragging a group into another group is not allowed.
+      if (activeId.startsWith("group:")) return prev;
+
+      const srcItems = [...(prev[activeContainer] ?? [])];
+      const dstItems = [...(prev[targetContainer] ?? [])];
+      const activeIdx = srcItems.indexOf(activeId);
+      if (activeIdx === -1) return prev;
+
+      let insertIdx: number;
+      if (overId in prev) {
+        // Dropped on the container
+        insertIdx = dstItems.length;
+      } else {
+        insertIdx = dstItems.indexOf(overId);
+        if (insertIdx === -1) insertIdx = dstItems.length;
+      }
+
+      const next = {
+        ...prev,
+        [activeContainer]: srcItems.filter((id) => id !== activeId),
+        [targetContainer]: [
+          ...dstItems.slice(0, insertIdx),
+          activeId,
+          ...dstItems.slice(insertIdx),
+        ],
+      };
+
+      // Guard: Don't update if state hasn't actually changed
+      if (JSON.stringify(next) === JSON.stringify(prev)) return prev;
+
+      itemsRef.current = next;
+      recentlyMovedToNewContainer.current = true;
+      return next;
+    });
+  }, []);
+
+  const collisionDetectionStrategy: CollisionDetection = useCallback(
+    (args) => {
+      // When an item was recently moved to a new container, short-circuit
+      // to the last known over-id. This prevents oscillation while the
+      // layout settles after a cross-container move.
+      if (recentlyMovedToNewContainer.current && lastOverId.current != null) {
+        return [{ id: lastOverId.current }];
+      }
+
+      const currentItems = itemsRef.current;
+      // 1. Try pointer collisions first
+      const pointerCollisions = pointerWithin(args);
+      let overId = getFirstCollision(pointerCollisions, "id");
+
+      if (overId == null) {
+        // 2. Fallback to closestCenter if no pointer intersection
+        const closestCollisions = closestCenter(args);
+        overId = getFirstCollision(closestCollisions, "id");
+      }
+
+      if (overId == null) {
+        lastOverId.current = null;
+        return [];
+      }
+
+      // If we are over a container (either root or a group),
+      // prioritize items within that container.
+      const containerId =
+        overId in currentItems
+          ? String(overId)
+          : findContainer(currentItems, String(overId));
+
+      if (containerId) {
+        const containerCollisions = closestCenter({
+          ...args,
+          droppableContainers: args.droppableContainers.filter((container) => {
+            return (
+              container.id === containerId ||
+              (currentItems[containerId] ?? []).includes(String(container.id))
+            );
+          }),
+        });
+        const resolvedId = getFirstCollision(containerCollisions, "id");
+        lastOverId.current = resolvedId ?? overId;
+        return [{ id: lastOverId.current }];
+      }
+
+      lastOverId.current = overId;
+      return [{ id: overId }];
+    },
+    [], // Stable detection
+  );
+
+  const handleDragEnd = useCallback(
+    ({ active, over }: DragEndEvent) => {
+      setActiveId(null);
+      lastOverId.current = null;
+      recentlyMovedToNewContainer.current = false;
+      if (!over) return;
+
+      const activeId = String(active.id);
+      const overId = String(over.id);
 
       setItems((prev) => {
-        const srcItems = [...(prev[activeContainer] ?? [])];
-        const dstItems = [...(prev[targetContainer] ?? [])];
+        const activeContainer = findContainer(prev, activeId);
+        if (!activeContainer) return prev;
+
+        let overContainer: string;
+        if (overId in prev) {
+          overContainer = overId;
+        } else {
+          overContainer = findContainer(prev, overId) ?? "root";
+        }
+
+        const srcItems = prev[activeContainer] ?? [];
+
+        if (activeContainer === overContainer) {
+          // Reorder within same container
+          const activeIdx = srcItems.indexOf(activeId);
+          const overIdx = (prev[overContainer] ?? []).indexOf(overId);
+
+          if (activeIdx !== -1 && overIdx !== -1 && activeIdx !== overIdx) {
+            const next = {
+              ...prev,
+              [activeContainer]: arrayMove(srcItems, activeIdx, overIdx),
+            };
+            itemsRef.current = next;
+            return next;
+          }
+          return prev;
+        }
+
+        // Cross-container move: only for encounters
+        if (activeId.startsWith("group:")) return prev;
+
+        const dstItems = prev[overContainer] ?? [];
         const activeIdx = srcItems.indexOf(activeId);
         if (activeIdx === -1) return prev;
 
         let insertIdx: number;
-        if (overId in prev || overId.startsWith("group:")) {
+        if (overId === overContainer) {
+          // Dropped on the container itself
           insertIdx = dstItems.length;
         } else {
           insertIdx = dstItems.indexOf(overId);
           if (insertIdx === -1) insertIdx = dstItems.length;
         }
 
-        return {
+        const next = {
           ...prev,
           [activeContainer]: srcItems.filter((id) => id !== activeId),
-          [targetContainer]: [
+          [overContainer]: [
             ...dstItems.slice(0, insertIdx),
             activeId,
             ...dstItems.slice(insertIdx),
           ],
         };
+        itemsRef.current = next;
+        return next;
       });
     },
-    [findContainer, items],
-  );
-
-  const handleDragEnd = useCallback(
-    ({ active, over }: DragEndEvent) => {
-      setActiveId(null);
-      if (!over) return;
-
-      const activeId = String(active.id);
-      const overId = String(over.id);
-
-      const activeContainer = findContainer(activeId);
-      if (!activeContainer) return;
-
-      let overContainer: string;
-      if (overId.startsWith("group:")) {
-        overContainer = overId.slice(6);
-      } else if (overId in items) {
-        overContainer = overId;
-      } else {
-        overContainer = findContainer(overId) ?? "root";
-      }
-
-      if (activeContainer !== overContainer) return;
-
-      const containerItems = items[activeContainer] ?? [];
-      const activeIdx = containerItems.indexOf(activeId);
-      const overIdx = containerItems.indexOf(overId);
-
-      if (activeIdx !== -1 && overIdx !== -1 && activeIdx !== overIdx) {
-        setItems((prev) => ({
-          ...prev,
-          [activeContainer]: arrayMove(containerItems, activeIdx, overIdx),
-        }));
-      }
-    },
-    [findContainer, items],
+    [], // Stable
   );
 
   // ── Local mutations ──────────────────────────────────────────────────────────
@@ -797,13 +1067,20 @@ export function ManageEncountersDialog({
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-muted-foreground"
-          >
-            <Settings2 className="h-3 w-3" />
-          </Button>
+          {compact ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground"
+            >
+              <ListTree className="h-3 w-3" />
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <ListTree className="h-3.5 w-3.5" />
+              Edit Groups & Pages
+            </Button>
+          )}
         </DialogTrigger>
         {/*
          * Custom DialogContent without translate-based centering.
@@ -813,8 +1090,11 @@ export function ManageEncountersDialog({
          * Using flexbox centering on the overlay avoids this entirely.
          */}
         <DialogPortal>
-          <DialogOverlay className="flex items-center justify-center">
-            <DialogPrimitive.Content className="relative z-50 flex max-h-[85vh] w-full max-w-md flex-col gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg">
+          <DialogOverlay className="flex items-start justify-center pt-16">
+            <DialogPrimitive.Content
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              className="relative z-50 flex max-h-[85vh] w-full max-w-md flex-col gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg"
+            >
               <DialogHeader>
                 <DialogTitle>Manage Encounters</DialogTitle>
                 <DialogDescription>
@@ -832,7 +1112,8 @@ export function ManageEncountersDialog({
                 <DndContext
                   id={dndId}
                   sensors={sensors}
-                  collisionDetection={closestCenter}
+                  collisionDetection={collisionDetectionStrategy}
+                  measuring={MEASURING_CONFIG}
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
@@ -842,93 +1123,34 @@ export function ManageEncountersDialog({
                     items={items.root ?? []}
                     strategy={verticalListSortingStrategy}
                   >
-                    <div className="flex flex-col gap-1">
+                    <div ref={setRootNodeRef} className="flex flex-col gap-1.5">
                       {(items.root ?? []).map((itemId) => {
                         const parsed = parseItemId(itemId);
                         if (!parsed) return null;
 
                         if (parsed.type === "group") {
                           const groupId = parsed.id;
-                          const groupEncs = items[groupId] ?? [];
-                          const collapsed = collapsedGroups.has(groupId);
-                          const currentName =
-                            localNames.get(itemId) ??
-                            encounterGroups.find((g) => g.id === groupId)
-                              ?.groupName ??
-                            "";
-
-                          // Droppable detection for group header highlight
-                          // (handled via onDragOver targeting the group container)
-                          const isBeingDraggedOver =
-                            activeId !== null &&
-                            !activeId.startsWith("group:") &&
-                            findContainer(activeId) === groupId;
-
                           return (
-                            <div key={itemId} className="flex flex-col gap-1">
-                              <SortableGroupHeader
-                                id={itemId}
-                                name={currentName}
-                                collapsed={collapsed}
-                                onToggleCollapse={() => toggleCollapse(groupId)}
-                                onDelete={() => setDeleteGroupId(groupId)}
-                                onRename={(n) => renameItem(itemId, n)}
-                                isPending={
-                                  isPending || (isGroupPending ?? false)
-                                }
-                                editingId={editingId}
-                                setEditingId={setEditingId}
-                                isOver={isBeingDraggedOver}
-                              />
-
-                              {!collapsed && (
-                                <div className="flex flex-col gap-1">
-                                  <SortableContext
-                                    items={groupEncs}
-                                    strategy={verticalListSortingStrategy}
-                                  >
-                                    {groupEncs.map((encItemId) => {
-                                      const encParsed = parseItemId(encItemId);
-                                      if (
-                                        !encParsed ||
-                                        encParsed.type !== "enc"
-                                      )
-                                        return null;
-                                      const encId = encParsed.id;
-                                      const encName =
-                                        localNames.get(encItemId) ??
-                                        encounters.find((e) => e.id === encId)
-                                          ?.encounterName ??
-                                        "";
-                                      return (
-                                        <SortableEncounterRow
-                                          key={encItemId}
-                                          id={encItemId}
-                                          name={encName}
-                                          indented
-                                          onDelete={() => onDelete(encId)}
-                                          onRename={(n) =>
-                                            renameItem(encItemId, n)
-                                          }
-                                          onMoveToRoot={() =>
-                                            moveEncToRoot(encItemId)
-                                          }
-                                          isPending={
-                                            isPending || isDeletePending
-                                          }
-                                          editingId={editingId}
-                                          setEditingId={setEditingId}
-                                        />
-                                      );
-                                    })}
-                                  </SortableContext>
-                                  <DroppableGroupArea
-                                    groupId={groupId}
-                                    isEmpty={groupEncs.length === 0}
-                                  />
-                                </div>
-                              )}
-                            </div>
+                            <SortableGroupSection
+                              key={itemId}
+                              groupId={groupId}
+                              items={items}
+                              localNames={localNames}
+                              onDelete={onDelete}
+                              onRename={renameItem}
+                              onMoveToRoot={moveEncToRoot}
+                              onToggleCollapse={toggleCollapse}
+                              collapsed={collapsedGroups.has(groupId)}
+                              isPending={isPending}
+                              isDeletePending={isDeletePending}
+                              isGroupPending={isGroupPending}
+                              editingId={editingId}
+                              setEditingId={setEditingId}
+                              findContainer={findContainerStable}
+                              activeId={activeId}
+                              encounterGroups={encounterGroups}
+                              encounters={encounters}
+                            />
                           );
                         }
 

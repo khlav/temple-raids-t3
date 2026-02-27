@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { DndContext } from "@dnd-kit/core";
 import { formatRaidDate } from "~/utils/date-formatting";
@@ -74,7 +74,52 @@ export function RaidPlanPublicView({
     },
   });
 
-  const userCharacterIds = userProfile?.userCharacterIds ?? [];
+  const userCharacterIds = useMemo(
+    () => userProfile?.userCharacterIds ?? [],
+    [userProfile?.userCharacterIds],
+  );
+
+  // Identify encounters where the current viewer has an AA assignment
+  const assignmentLabelsMap = useMemo(() => {
+    if (
+      !isLoggedIn ||
+      !userCharacterIds.length ||
+      !plan?.characters.length ||
+      !plan?.aaSlotAssignments
+    ) {
+      return new Map<string, string[]>();
+    }
+
+    // Find the planCharacterIds for the logged-in user's characters
+    const viewerPlanCharacterIds = new Set(
+      plan.characters
+        .filter(
+          (char) =>
+            char.characterId !== null &&
+            userCharacterIds.includes(char.characterId),
+        )
+        .map((char) => char.id),
+    );
+
+    if (viewerPlanCharacterIds.size === 0) {
+      return new Map<string, string[]>();
+    }
+
+    // Find assignment names (and "default") where these characters have AA assignments
+    const labelsMap = new Map<string, string[]>();
+    for (const assignment of plan.aaSlotAssignments) {
+      if (viewerPlanCharacterIds.has(assignment.planCharacterId)) {
+        const key = assignment.encounterId ?? "default";
+        const labels = labelsMap.get(key) ?? [];
+        if (!labels.includes(assignment.slotName)) {
+          labels.push(assignment.slotName);
+        }
+        labelsMap.set(key, labels);
+      }
+    }
+
+    return labelsMap;
+  }, [isLoggedIn, userCharacterIds, plan?.characters, plan?.aaSlotAssignments]);
 
   // Update breadcrumb to show plan name instead of UUID
   useEffect(() => {
@@ -131,7 +176,7 @@ export function RaidPlanPublicView({
                     <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
                       <Badge
                         variant="secondary"
-                        className="pointer-events-none px-2.5 py-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground"
+                        className="pointer-events-none px-2 py-0.5 text-muted-foreground"
                       >
                         Plan
                       </Badge>
@@ -139,7 +184,7 @@ export function RaidPlanPublicView({
                     </h1>
                     <Badge
                       variant="secondary"
-                      className={`pointer-events-none hidden px-2 py-0.5 text-xs font-semibold uppercase tracking-wider lg:inline-flex ${ZONE_BADGE_CLASSES[plan.zoneId] ?? "text-muted-foreground"}`}
+                      className={`pointer-events-none hidden px-2 py-0.5 lg:inline-flex ${ZONE_BADGE_CLASSES[plan.zoneId] ?? "text-muted-foreground"}`}
                     >
                       {zoneDisplayName}
                     </Badge>
@@ -147,7 +192,7 @@ export function RaidPlanPublicView({
                 </TooltipTrigger>
                 {(plan.startAt ?? plan.event) && (
                   <TooltipContent
-                    side="bottom"
+                    side="top"
                     className="dark border-none bg-secondary text-muted-foreground"
                   >
                     {plan.startAt ? (
@@ -187,6 +232,7 @@ export function RaidPlanPublicView({
               encounters={plan.encounters}
               activeTab={activeTab}
               onTabChange={setActiveTab}
+              assignmentLabelsMap={assignmentLabelsMap}
             />
 
             {/* Content column */}
@@ -251,7 +297,7 @@ export function RaidPlanPublicView({
 
               {/* Two-column layout for tab content - wrapped in bare DndContext */}
               <DndContext>
-                <p className="mb-2 text-base font-semibold">
+                <p className="mb-2 text-lg font-semibold">
                   {activeTab === "default"
                     ? "Default/Trash"
                     : (plan.encounters.find((e) => e.id === activeTab)
