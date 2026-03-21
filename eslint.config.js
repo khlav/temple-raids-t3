@@ -5,6 +5,7 @@ import { FlatCompat } from "@eslint/eslintrc";
 
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import typescriptParser from "@typescript-eslint/parser";
+import nextPlugin from "@next/eslint-plugin-next";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,10 +22,12 @@ const config = [
       "out/",
       "build/",
       "dist/",
-      "*.config.js",
-      "*.config.ts",
+      "next.config.js",
+      "postcss.config.js",
+      "prettier.config.js",
+      "tailwind.config.ts",
+      "drizzle.config.ts",
       "next-env.d.ts",
-      "eslint.config.js",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
@@ -47,6 +50,7 @@ const config = [
     },
     plugins: {
       "@typescript-eslint": typescriptEslint,
+      "@next/next": nextPlugin,
     },
     rules: {
       "@typescript-eslint/no-unused-vars": "warn",
