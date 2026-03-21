@@ -272,47 +272,50 @@ export const AppHeader = () => {
             >
               <SheetHeader>
                 <SheetTitle className="font-display text-2xl tracking-tight">
-                  Temple Navigation
+                  Temple
                 </SheetTitle>
-                <SheetDescription>
-                  Core sections in front, operational tools one step deeper.
-                </SheetDescription>
+                <SheetDescription>Classic Era</SheetDescription>
               </SheetHeader>
               <div className="mt-6 space-y-6">
                 <div className="grid gap-2">
                   {primaryNav.map((item) => {
                     const active = isActivePath(pathname, item.href);
                     return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          "rounded-2xl border px-4 py-3 text-sm font-medium transition-colors",
-                          active
-                            ? "bg-primary/12 border-primary/30 text-primary"
-                            : "border-border/70 bg-card/40 text-muted-foreground hover:border-primary/25 hover:text-foreground",
-                        )}
-                      >
-                        {item.label}
-                      </Link>
+                      <SheetClose asChild key={item.href}>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "rounded-2xl border px-4 py-3 text-sm font-medium transition-colors",
+                            active
+                              ? "bg-primary/12 border-primary/30 text-primary"
+                              : "border-border/70 bg-card/40 text-muted-foreground hover:border-primary/25 hover:text-foreground",
+                          )}
+                        >
+                          {item.label}
+                        </Link>
+                      </SheetClose>
                     );
                   })}
                 </div>
                 {utilityLinks.length > 0 ? (
                   <div className="space-y-3">
-                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                      Workspaces
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">Guild Tools</Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Manager and Site Admin tools.
                     </div>
                     <div className="grid gap-2">
                       {utilityLinks.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className="panel-subtle flex items-center gap-3 rounded-2xl border border-border/70 px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/35 hover:text-foreground"
-                        >
-                          <item.icon className="h-4 w-4 text-primary" />
-                          <span>{item.label}</span>
-                        </Link>
+                        <SheetClose asChild key={item.href}>
+                          <Link
+                            href={item.href}
+                            className="panel-subtle flex items-center gap-3 rounded-2xl border border-border/70 px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/35 hover:text-foreground"
+                          >
+                            <item.icon className="h-4 w-4 text-primary" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SheetClose>
                       ))}
                     </div>
                   </div>
