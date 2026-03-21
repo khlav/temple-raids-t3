@@ -53,6 +53,7 @@ const primaryNav = [
   { label: "Raid Plans", href: "/raid-plans" },
   { label: "Characters", href: "/characters" },
   { label: "Recipes", href: "/rare-recipes" },
+  { label: "Reports", href: "/reports/attendance" },
 ];
 
 const managerNav = [
