@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useMemo } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useMemo } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import {
   Menu,
@@ -91,6 +91,7 @@ function isActivePath(pathname: string, href: string) {
 
 export const AppHeader = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
   const { setOpen } = useGlobalQuickLauncher();
 
@@ -110,6 +111,16 @@ export const AppHeader = () => {
   const handleSignOut = () => {
     void signOut();
   };
+
+  useEffect(() => {
+    for (const item of primaryNav) {
+      router.prefetch(item.href);
+    }
+
+    for (const item of utilityLinks) {
+      router.prefetch(item.href);
+    }
+  }, [router, utilityLinks]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/75 backdrop-blur-xl">
