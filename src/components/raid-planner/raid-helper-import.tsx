@@ -494,29 +494,40 @@ function CharacterMatchingDialog({
             ) : matchStats ? (
               <div className="space-y-3">
                 {/* Stats row */}
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <span className="flex items-center gap-1 text-green-600">
-                    <Check className="h-4 w-4" />
-                    {matchStats.matched.length} matched
-                  </span>
-                  {matchStats.ambiguous.length > 0 && (
-                    <span className="flex items-center gap-1 text-yellow-600">
-                      <AlertTriangle className="h-4 w-4" />
-                      {matchStats.ambiguous.length} ambiguous
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <span className="flex items-center gap-1 text-green-600">
+                      <Check className="h-4 w-4" />
+                      {matchStats.matched.length} matched
                     </span>
-                  )}
-                  {matchStats.unmatched.length > 0 && (
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <HelpCircle className="h-4 w-4" />
-                      {matchStats.unmatched.length} unmatched
-                    </span>
-                  )}
-                  {matchStats.skipped.length > 0 && (
-                    <span className="flex items-center gap-1 text-muted-foreground/60">
-                      <MinusCircle className="h-4 w-4" />
-                      {matchStats.skipped.length} skipped
-                    </span>
-                  )}
+                    {matchStats.ambiguous.length > 0 && (
+                      <span className="flex items-center gap-1 text-yellow-600">
+                        <AlertTriangle className="h-4 w-4" />
+                        {matchStats.ambiguous.length} ambiguous
+                      </span>
+                    )}
+                    {matchStats.unmatched.length > 0 && (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <HelpCircle className="h-4 w-4" />
+                        {matchStats.unmatched.length} unmatched
+                      </span>
+                    )}
+                    {matchStats.skipped.length > 0 && (
+                      <span className="flex items-center gap-1 text-muted-foreground/60">
+                        <MinusCircle className="h-4 w-4" />
+                        {matchStats.skipped.length} skipped
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => setIsReviewOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    disabled={!matchResults || matchResults.length === 0}
+                  >
+                    <ListChecks className="mr-2 h-4 w-4" />
+                    Review Matches
+                  </Button>
                 </div>
 
                 {/* All characters grouped by party */}
@@ -701,14 +712,7 @@ function CharacterMatchingDialog({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setIsReviewOpen(true)}
-                variant="outline"
-                disabled={!matchResults || matchResults.length === 0}
-              >
-                <ListChecks className="mr-2 h-4 w-4" />
-                Review Matches
-              </Button>
+
               {/* Server selector */}
               <div className="flex items-center gap-2">
                 <label
