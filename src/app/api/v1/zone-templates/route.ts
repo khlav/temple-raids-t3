@@ -1,9 +1,10 @@
 // src/app/api/v1/zone-templates/route.ts
 import { NextResponse } from "next/server";
-import { inArray } from "drizzle-orm";
+import { asc, inArray } from "drizzle-orm";
 import { validateApiToken } from "~/server/api/v1-auth";
 import { RAID_ZONE_CONFIG } from "~/lib/raid-zones";
 import { getGroupCount } from "~/components/raid-planner/constants";
+import { getSlotNames } from "~/lib/aa-template";
 import { db } from "~/server/db";
 import {
   raidPlanTemplates,
@@ -55,7 +56,8 @@ export async function GET(request: Request) {
           aaTemplate: raidPlanTemplateEncounters.aaTemplate,
         })
         .from(raidPlanTemplateEncounters)
-        .where(inArray(raidPlanTemplateEncounters.templateId, templateIds)),
+        .where(inArray(raidPlanTemplateEncounters.templateId, templateIds))
+        .orderBy(asc(raidPlanTemplateEncounters.sortOrder)),
       db
         .select({
           id: raidPlanTemplateEncounterGroups.id,
@@ -64,9 +66,8 @@ export async function GET(request: Request) {
           sortOrder: raidPlanTemplateEncounterGroups.sortOrder,
         })
         .from(raidPlanTemplateEncounterGroups)
-        .where(
-          inArray(raidPlanTemplateEncounterGroups.templateId, templateIds),
-        ),
+        .where(inArray(raidPlanTemplateEncounterGroups.templateId, templateIds))
+        .orderBy(asc(raidPlanTemplateEncounterGroups.sortOrder)),
     ]);
 
     const encountersByTemplate = new Map<string, typeof encounters>();
@@ -90,6 +91,7 @@ export async function GET(request: Request) {
           id: t.id,
           isActive: t.isActive,
           defaultAATemplate: t.defaultAATemplate,
+          availableSlots: getSlotNames(t.defaultAATemplate ?? ""),
           encounters: encountersByTemplate.get(t.id) ?? [],
           encounterGroups: groupsByTemplate.get(t.id) ?? [],
         },

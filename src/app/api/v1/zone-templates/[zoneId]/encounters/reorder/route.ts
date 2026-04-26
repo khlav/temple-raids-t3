@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { validateApiToken } from "~/server/api/v1-auth";
 import { db } from "~/server/db";
 import {
@@ -73,13 +73,23 @@ export async function POST(
         await tx
           .update(raidPlanTemplateEncounterGroups)
           .set({ sortOrder: g.sortOrder })
-          .where(eq(raidPlanTemplateEncounterGroups.id, g.id));
+          .where(
+            and(
+              eq(raidPlanTemplateEncounterGroups.id, g.id),
+              eq(raidPlanTemplateEncounterGroups.templateId, template.id),
+            ),
+          );
       }
       for (const e of encounters) {
         await tx
           .update(raidPlanTemplateEncounters)
           .set({ sortOrder: e.sortOrder, groupId: e.groupId })
-          .where(eq(raidPlanTemplateEncounters.id, e.id));
+          .where(
+            and(
+              eq(raidPlanTemplateEncounters.id, e.id),
+              eq(raidPlanTemplateEncounters.templateId, template.id),
+            ),
+          );
       }
     });
 
