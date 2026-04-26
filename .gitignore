@@ -56,4 +56,5 @@ bfg-replacements.txt
 
 # claude/llm local settings and testing
 .claude/settings*
-/scripts/*.ts*.worktrees/
+/scripts/*.ts
+.worktrees
