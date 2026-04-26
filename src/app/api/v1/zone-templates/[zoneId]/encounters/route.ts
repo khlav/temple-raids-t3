@@ -14,6 +14,7 @@ import {
 const AddEncounterSchema = z.object({
   encounterName: z.string().min(1).max(256),
   groupId: z.string().uuid().nullable().optional(),
+  aaTemplate: z.string().optional(),
 });
 
 export async function POST(
@@ -76,6 +77,7 @@ export async function POST(
         encounterName: parsed.data.encounterName,
         sortOrder: nextSortOrder,
         groupId: parsed.data.groupId ?? null,
+        aaTemplate: parsed.data.aaTemplate ?? null,
       })
       .returning({
         id: raidPlanTemplateEncounters.id,
@@ -83,6 +85,7 @@ export async function POST(
         encounterName: raidPlanTemplateEncounters.encounterName,
         sortOrder: raidPlanTemplateEncounters.sortOrder,
         groupId: raidPlanTemplateEncounters.groupId,
+        aaTemplate: raidPlanTemplateEncounters.aaTemplate,
       });
 
     return NextResponse.json(newEncounter[0]!, { status: 201 });

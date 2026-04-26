@@ -1198,6 +1198,10 @@ registry.registerPath({
               .nullable()
               .optional()
               .openapi({ example: null }),
+            aaTemplate: z
+              .string()
+              .optional()
+              .openapi({ example: "{tank}MT\n{healer}H1 H2 H3" }),
           }),
         },
       },
