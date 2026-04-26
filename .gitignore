@@ -46,6 +46,7 @@ yarn-error.log*
 
 # planning md files
 plans
+!docs/superpowers/plans
 
 # wow_addons_for_reference
 wow_addons_for_reference
