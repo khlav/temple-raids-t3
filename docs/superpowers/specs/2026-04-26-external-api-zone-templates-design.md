@@ -186,7 +186,20 @@ src/app/api/v1/zone-templates/
 
 ## OpenAPI
 
-All endpoints registered in `src/lib/openapi-registry.ts` under the `"Zone Templates"` tag, following the same pattern as existing raid-plan routes.
+All endpoints registered in `src/lib/openapi-registry.ts` under the `"Zone Templates"` tag.
+
+| Endpoint                                                 | operationId                     |
+| -------------------------------------------------------- | ------------------------------- |
+| `GET /zone-templates`                                    | `listZoneTemplates`             |
+| `GET /zone-templates/:zoneId`                            | `getZoneTemplate`               |
+| `PATCH /zone-templates/:zoneId`                          | `patchZoneTemplate`             |
+| `POST /zone-templates/:zoneId/encounters`                | `addZoneTemplateEncounter`      |
+| `PUT /zone-templates/:zoneId/encounters/:encounterId`    | `updateZoneTemplateEncounter`   |
+| `DELETE /zone-templates/:zoneId/encounters/:encounterId` | `deleteZoneTemplateEncounter`   |
+| `POST /zone-templates/:zoneId/encounters/reorder`        | `reorderZoneTemplateEncounters` |
+| `POST /zone-templates/:zoneId/groups`                    | `createZoneTemplateGroup`       |
+| `PUT /zone-templates/:zoneId/groups/:groupId`            | `updateZoneTemplateGroup`       |
+| `DELETE /zone-templates/:zoneId/groups/:groupId`         | `deleteZoneTemplateGroup`       |
 
 ---
 
