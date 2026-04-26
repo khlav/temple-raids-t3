@@ -15,10 +15,14 @@ export function getZoneConfig(zoneId: string) {
   return RAID_ZONE_CONFIG.find((z) => z.instance === zoneId) ?? null;
 }
 
+/**
+ * Ensures the zone template record exists. On conflict (zone already has a template),
+ * only refreshes zoneName — does not overwrite isActive, sortOrder, or other fields.
+ */
 export async function upsertZoneTemplate(zoneId: string, createdById: string) {
-  const zoneConfig = getZoneConfig(zoneId);
-  if (!zoneConfig) throw new Error(`Unknown zone: ${zoneId}`);
   const sortOrder = RAID_ZONE_CONFIG.findIndex((z) => z.instance === zoneId);
+  const zoneConfig = sortOrder !== -1 ? RAID_ZONE_CONFIG[sortOrder] : null;
+  if (!zoneConfig) throw new Error(`Unknown zone: ${zoneId}`);
   const result = await db
     .insert(raidPlanTemplates)
     .values({
