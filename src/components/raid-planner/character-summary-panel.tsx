@@ -47,7 +47,7 @@ export function CharacterSummaryPanel({
   return (
     <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
       {/* Summary line */}
-      <div className="flex items-start justify-between gap-3 p-3">
+      <div className="flex items-start justify-between gap-3 px-3 py-2">
         {encounterSummaries.length === 0 ? (
           <p className="text-sm italic text-muted-foreground">
             No assignments found for{" "}
@@ -107,25 +107,25 @@ export function CharacterSummaryPanel({
         )}
       </div>
 
-      {/* Encounter grid */}
+      {/* Encounter masonry */}
       {showDetails && encounterSummaries.length > 0 && (
-        <div className="border-t border-border p-3">
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+        <div className="border-t border-border px-3 py-2">
+          <div className="columns-2 gap-2 lg:columns-3">
             {encounterSummaries.map((summary) => (
               <button
                 key={summary.contextId}
                 type="button"
                 onClick={() => onEncounterClick(summary.encounterId)}
-                className="w-full cursor-pointer overflow-hidden rounded-md border border-border bg-muted/30 text-left transition-colors hover:border-muted-foreground/50 hover:bg-muted/50"
+                className="mb-2 w-full cursor-pointer break-inside-avoid overflow-hidden rounded-md border border-border bg-muted/30 text-left transition-colors hover:border-muted-foreground/50 hover:bg-muted/50"
               >
-                <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
+                <div className="flex items-center gap-1.5 border-b border-border px-2 py-1">
                   <div className="h-3 w-0.5 shrink-0 rounded-full bg-purple-400" />
-                  <span className="flex-1 truncate text-xs font-semibold text-foreground">
+                  <span className="flex-1 truncate text-sm font-semibold text-foreground">
                     {summary.encounterName}
                   </span>
                   <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                 </div>
-                <div className="p-2">
+                <div className="p-1.5">
                   <AATemplateRenderer
                     template={summary.template}
                     encounterId={
