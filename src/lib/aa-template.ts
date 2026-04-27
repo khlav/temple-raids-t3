@@ -288,3 +288,27 @@ export function getSlotDefinitions(template: string): AASlotDefinition[] {
 
   return definitions;
 }
+
+/**
+ * Extract template lines that contain an {assign:} or {ref:} tag for any of
+ * the given slot names. Used to build the per-character assignment summary.
+ */
+export function extractCharacterLines(
+  template: string,
+  slotNames: string[],
+): string[] {
+  if (!template || slotNames.length === 0) return [];
+
+  const lowerNames = slotNames.map((n) => n.toLowerCase());
+
+  return template.split("\n").filter((line) => {
+    const lower = line.toLowerCase();
+    return lowerNames.some(
+      (name) =>
+        lower.includes(`{assign:${name}}`) ||
+        lower.includes(`{assign:${name}:`) ||
+        lower.includes(`{ref:${name}}`) ||
+        lower.includes(`{ref:${name}:`),
+    );
+  });
+}
