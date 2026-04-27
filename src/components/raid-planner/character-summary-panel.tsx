@@ -94,6 +94,7 @@ export function CharacterSummaryPanel({
         )}
         {encounterSummaries.length > 0 && (
           <button
+            type="button"
             onClick={() => setShowDetails((v) => !v)}
             className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:border-muted-foreground hover:text-foreground"
           >
@@ -112,10 +113,11 @@ export function CharacterSummaryPanel({
         <div className="border-t border-border p-3">
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
             {encounterSummaries.map((summary) => (
-              <div
+              <button
                 key={summary.encounterId}
+                type="button"
                 onClick={() => onEncounterClick(summary.encounterId)}
-                className="cursor-pointer overflow-hidden rounded-md border border-border bg-muted/30 transition-colors hover:border-muted-foreground/50 hover:bg-muted/50"
+                className="w-full cursor-pointer overflow-hidden rounded-md border border-border bg-muted/30 text-left transition-colors hover:border-muted-foreground/50 hover:bg-muted/50"
               >
                 <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
                   <div className="h-3 w-0.5 shrink-0 rounded-full bg-purple-400" />
@@ -145,7 +147,7 @@ export function CharacterSummaryPanel({
                     userCharacterIds={userCharacterIds}
                   />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
