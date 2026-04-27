@@ -151,7 +151,7 @@ export function CharacterSummaryPanel({
                       </TooltipTrigger>
                       <TooltipContent
                         side="right"
-                        className="w-auto max-w-sm border border-border bg-card p-2 text-foreground shadow-xl"
+                        className="w-auto max-w-sm bg-card p-0 text-foreground shadow-xl"
                       >
                         <AATemplateRenderer
                           template={summary.template}
