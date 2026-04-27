@@ -354,7 +354,6 @@ export function RaidPlanPublicView({
             viewAsCharacter={viewAsCharacter}
             encounterSummaries={encounterSummaries}
             allCharacters={plan.characters as RaidPlanCharacter[]}
-            userCharacterIds={userCharacterIds}
             onEncounterClick={setActiveTab}
           />
         )}

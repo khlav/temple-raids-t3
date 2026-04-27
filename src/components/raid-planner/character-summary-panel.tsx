@@ -23,7 +23,6 @@ interface CharacterSummaryPanelProps {
   viewAsCharacter: { name: string; class: string | null };
   encounterSummaries: CharacterEncounterSummary[];
   allCharacters: RaidPlanCharacter[];
-  userCharacterIds: number[];
   onEncounterClick: (encounterId: string) => void;
 }
 
@@ -31,7 +30,6 @@ export function CharacterSummaryPanel({
   viewAsCharacter,
   encounterSummaries,
   allCharacters,
-  userCharacterIds,
   onEncounterClick,
 }: CharacterSummaryPanelProps) {
   const [showDetails, setShowDetails] = useState(true);
@@ -145,7 +143,6 @@ export function CharacterSummaryPanel({
                     disabled
                     hideUnassigned
                     skipDndContext
-                    userCharacterIds={userCharacterIds}
                   />
                 </div>
               </button>
