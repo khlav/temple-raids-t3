@@ -97,32 +97,44 @@ export function CharacterSummaryPanel({
         )}
       </div>
 
-      {/* Encounter list — two columns, no cards */}
+      {/* Encounter list — two compact columns, left-aligned */}
       {showDetails && encounterSummaries.length > 0 && (
         <div className="border-t border-border px-3 py-2">
-          <div className="columns-2 gap-x-6">
-            {encounterSummaries.map((summary) => (
-              <button
-                key={summary.encounterId}
-                type="button"
-                onClick={() => onEncounterClick(summary.encounterId)}
-                className="flex w-full break-inside-avoid items-center gap-2 py-0.5 text-left text-sm transition-opacity hover:opacity-70"
-              >
-                <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" />
-                <span className="shrink-0 font-semibold text-foreground">
-                  {summary.encounterName}
-                </span>
-                <div className="flex flex-wrap gap-1">
-                  {summary.slotNames.map((name) => (
-                    <span
-                      key={name}
-                      className="inline-block rounded border border-purple-500/25 bg-purple-500/10 px-1 text-xs font-medium text-purple-300"
-                    >
-                      {name}
+          <div className="flex items-start gap-x-8">
+            {[
+              encounterSummaries.slice(
+                0,
+                Math.ceil(encounterSummaries.length / 2),
+              ),
+              encounterSummaries.slice(
+                Math.ceil(encounterSummaries.length / 2),
+              ),
+            ].map((col, ci) => (
+              <div key={ci} className="flex flex-col">
+                {col.map((summary) => (
+                  <button
+                    key={summary.encounterId}
+                    type="button"
+                    onClick={() => onEncounterClick(summary.encounterId)}
+                    className="flex items-center gap-2 py-0.5 text-left text-sm transition-opacity hover:opacity-70"
+                  >
+                    <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+                    <span className="shrink-0 font-semibold text-foreground">
+                      {summary.encounterName}
                     </span>
-                  ))}
-                </div>
-              </button>
+                    <div className="flex flex-wrap gap-1">
+                      {summary.slotNames.map((name) => (
+                        <span
+                          key={name}
+                          className="inline-block rounded border border-purple-500/25 bg-purple-500/10 px-1 text-xs font-medium text-purple-300"
+                        >
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         </div>
