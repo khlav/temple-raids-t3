@@ -73,7 +73,7 @@ export function CharacterSummaryPanel({
             </span>{" "}
             has assignments in{" "}
             {summaryEncounters.map((s, i) => (
-              <span key={s.encounterId}>
+              <span key={s.contextId}>
                 <span className="font-semibold text-foreground">
                   {s.encounterName}
                 </span>{" "}
