@@ -172,7 +172,7 @@ export function RaidPlanPublicView({
           slotNames: defaultSlotNames,
           template: lines.join("\n"),
           slotAssignments: plan.aaSlotAssignments.filter(
-            (a) => a.raidPlanId === planId && a.encounterId === null,
+            (a) => a.encounterId === null,
           ),
           contextId: planId,
         });
