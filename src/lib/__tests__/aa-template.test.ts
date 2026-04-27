@@ -68,4 +68,14 @@ describe("extractCharacterLines", () => {
       "OT: {assign:MainTank}",
     ]);
   });
+
+  it("includes {assign:} definition lines for slots referenced via {ref:} in matched lines", () => {
+    // Healer line references the tank slot — renderer needs the tank definition line too
+    const template =
+      "{skull} Tank: {assign:HatefulTank1}\n{cross} {ref:HatefulTank1}: {assign:HatefulTank1Heals}\nUnrelated line";
+    expect(extractCharacterLines(template, ["HatefulTank1Heals"])).toEqual([
+      "{skull} Tank: {assign:HatefulTank1}",
+      "{cross} {ref:HatefulTank1}: {assign:HatefulTank1Heals}",
+    ]);
+  });
 });
