@@ -4,32 +4,22 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
 import { ClassIcon } from "~/components/ui/class-icon";
 import { AA_CLASS_COLORS } from "~/lib/aa-formatting";
-import { AATemplateRenderer } from "./aa-template-renderer";
-import type { RaidPlanCharacter, AASlotAssignment } from "./types";
 
 export interface CharacterEncounterSummary {
   encounterId: string | "default";
   encounterName: string;
   slotNames: string[];
-  /** extractCharacterLines(fullTemplate, slotNames).join('\n') */
-  template: string;
-  /** Assignments filtered to this encounter context */
-  slotAssignments: AASlotAssignment[];
-  /** planId when encounterId === "default"; encounter UUID otherwise */
-  contextId: string;
 }
 
 interface CharacterSummaryPanelProps {
   viewAsCharacter: { name: string; class: string | null };
   encounterSummaries: CharacterEncounterSummary[];
-  allCharacters: RaidPlanCharacter[];
   onEncounterClick: (encounterId: string) => void;
 }
 
 export function CharacterSummaryPanel({
   viewAsCharacter,
   encounterSummaries,
-  allCharacters,
   onEncounterClick,
 }: CharacterSummaryPanelProps) {
   const [showDetails, setShowDetails] = useState(true);
@@ -71,7 +61,7 @@ export function CharacterSummaryPanel({
             </span>{" "}
             has assignments in{" "}
             {summaryEncounters.map((s, i) => (
-              <span key={s.contextId}>
+              <span key={s.encounterId}>
                 <span className="font-semibold text-foreground">
                   {s.encounterName}
                 </span>{" "}
@@ -107,43 +97,30 @@ export function CharacterSummaryPanel({
         )}
       </div>
 
-      {/* Encounter masonry */}
+      {/* Encounter list — two columns, no cards */}
       {showDetails && encounterSummaries.length > 0 && (
         <div className="border-t border-border px-3 py-2">
-          <div className="columns-2 gap-2 lg:columns-3">
+          <div className="columns-2 gap-x-6">
             {encounterSummaries.map((summary) => (
               <button
-                key={summary.contextId}
+                key={summary.encounterId}
                 type="button"
                 onClick={() => onEncounterClick(summary.encounterId)}
-                className="mb-2 w-full cursor-pointer break-inside-avoid overflow-hidden rounded-md border border-border bg-muted/30 text-left transition-colors hover:border-muted-foreground/50 hover:bg-muted/50"
+                className="flex w-full break-inside-avoid items-center gap-2 py-0.5 text-left text-sm transition-opacity hover:opacity-70"
               >
-                <div className="flex items-center gap-1.5 border-b border-border px-2 py-1">
-                  <div className="h-3 w-0.5 shrink-0 rounded-full bg-purple-400" />
-                  <span className="flex-1 truncate text-sm font-semibold text-foreground">
-                    {summary.encounterName}
-                  </span>
-                  <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-                </div>
-                <div className="p-1.5">
-                  <AATemplateRenderer
-                    template={summary.template}
-                    encounterId={
-                      summary.encounterId !== "default"
-                        ? summary.contextId
-                        : undefined
-                    }
-                    raidPlanId={
-                      summary.encounterId === "default"
-                        ? summary.contextId
-                        : undefined
-                    }
-                    characters={allCharacters}
-                    slotAssignments={summary.slotAssignments}
-                    disabled
-                    hideUnassigned
-                    skipDndContext
-                  />
+                <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+                <span className="shrink-0 font-semibold text-foreground">
+                  {summary.encounterName}
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {summary.slotNames.map((name) => (
+                    <span
+                      key={name}
+                      className="inline-block rounded border border-purple-500/25 bg-purple-500/10 px-1 text-xs font-medium text-purple-300"
+                    >
+                      {name}
+                    </span>
+                  ))}
                 </div>
               </button>
             ))}
