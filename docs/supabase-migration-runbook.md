@@ -4,28 +4,46 @@ This project uses Supabase as hosted Postgres only. Application auth remains in 
 
 ## Connection Model
 
-- `DATABASE_URL`: runtime application traffic
-  - For Supabase on Vercel/serverless, use the transaction pooler URL.
-- `DATABASE_MIGRATION_URL`: schema admin, dump/restore, and Drizzle migration traffic
-  - Prefer Supabase direct connection when IPv6 is available.
-  - Otherwise use the Supabase session pooler.
+Supabase exposes two pooler endpoints. The `db.<ref>.supabase.co` direct connection hostname is not available on newer Supabase projects — use the pooler URLs exclusively.
 
-The runtime client in [src/server/db/index.ts](/Users/kirkhlavka/workspace/repos/temple-raids/temple-raids-t3/src/server/db/index.ts) automatically disables prepared statements when `DATABASE_URL` points at port `6543`, which is required for Supabase transaction pooling.
+| Endpoint                             | Port   | Mode        | Use for                                        |
+| ------------------------------------ | ------ | ----------- | ---------------------------------------------- |
+| `aws-1-<region>.pooler.supabase.com` | `6543` | Transaction | Vercel/serverless runtime (`DATABASE_URL`)     |
+| `aws-1-<region>.pooler.supabase.com` | `5432` | Session     | Migrations, `pg_dump`, `pg_restore`, local dev |
+
+- `DATABASE_URL`: runtime application traffic. Use the **transaction pooler (port 6543)** on Vercel.
+- `DATABASE_MIGRATION_URL`: schema admin, dump/restore, and Drizzle migration traffic. Use the **session pooler (port 5432)**.
+
+The runtime client in `src/server/db/index.ts` automatically disables prepared statements when `DATABASE_URL` points at port `6543`, which is required for Supabase transaction pooling.
 
 ## Recommended Environment Variables
 
 ```bash
-DATABASE_URL=postgres://...                 # runtime URL
-DATABASE_MIGRATION_URL=postgres://...       # admin/migration URL
+# Runtime (transaction pooler, port 6543 — Vercel/serverless)
+DATABASE_URL=postgresql://postgres.<ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres
 
-NEON_DATABASE_URL=postgres://...            # source for production export
-SUPABASE_DEV_MIGRATION_URL=postgres://...   # DEV target for rehearsal
-SUPABASE_PROD_MIGRATION_URL=postgres://...  # PROD target for cutover
+# Migrations (session pooler, port 5432 — pg_dump/pg_restore safe)
+DATABASE_MIGRATION_URL=postgresql://postgres.<ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres
+
+NEON_DATABASE_URL=postgresql://...          # source for production export
+SUPABASE_DEV_MIGRATION_URL=postgresql://... # DEV session pooler (port 5432) for rehearsal
+SUPABASE_PROD_MIGRATION_URL=postgresql://...# PROD session pooler (port 5432) for cutover
 ```
 
 The helper scripts below use `SOURCE_DATABASE_URL` and `TARGET_DATABASE_URL` by default. You can either export those directly or map them from the environment-specific variables above inline when running a command.
 
 Dump artifacts exclude the Neon-managed `neon_auth` schema so provider-specific objects are not restored into Supabase.
+
+## Prerequisites
+
+`pg_dump` and `pg_restore` must be at least as new as the server being dumped. Supabase runs PostgreSQL 17, so you need the PostgreSQL 17 client tools:
+
+```bash
+brew install postgresql@17
+export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
+```
+
+Add the `PATH` export to your shell profile to make it permanent, or prefix each `pnpm db:migration:*` command with it when running ad hoc.
 
 ## Rehearsal Workflow
 
