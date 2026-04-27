@@ -77,17 +77,8 @@ export function CharacterSummaryPanel({
               <span key={s.encounterId}>
                 <span className="font-semibold text-foreground">
                   {s.encounterName}
-                </span>{" "}
-                (
-                {s.slotNames.map((name, j) => (
-                  <span key={name}>
-                    <span className="inline-block rounded border border-purple-500/25 bg-purple-500/10 px-1 text-xs font-medium text-purple-300">
-                      {name}
-                    </span>
-                    {j < s.slotNames.length - 1 ? " " : ""}
-                  </span>
-                ))}
-                ){i < summaryEncounters.length - 1 ? ", " : ""}
+                </span>
+                {i < summaryEncounters.length - 1 ? ", " : ""}
               </span>
             ))}
             {remainingCount > 0 &&
