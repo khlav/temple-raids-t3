@@ -42,8 +42,9 @@ export function CharacterSummaryPanel({
       ] ?? undefined)
     : undefined;
 
-  const summaryEncounters = encounterSummaries.slice(0, 3);
-  const remainingCount = encounterSummaries.length - 3;
+  const MAX_SUMMARY = 3;
+  const summaryEncounters = encounterSummaries.slice(0, MAX_SUMMARY);
+  const remainingCount = Math.max(0, encounterSummaries.length - MAX_SUMMARY);
 
   return (
     <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
@@ -114,7 +115,7 @@ export function CharacterSummaryPanel({
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
             {encounterSummaries.map((summary) => (
               <button
-                key={summary.encounterId}
+                key={summary.contextId}
                 type="button"
                 onClick={() => onEncounterClick(summary.encounterId)}
                 className="w-full cursor-pointer overflow-hidden rounded-md border border-border bg-muted/30 text-left transition-colors hover:border-muted-foreground/50 hover:bg-muted/50"
