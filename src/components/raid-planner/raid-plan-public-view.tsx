@@ -349,14 +349,16 @@ export function RaidPlanPublicView({
 
         <Separator className="my-2" />
 
-        {viewAsCharacterId !== null && viewAsCharacter && (
-          <CharacterSummaryPanel
-            viewAsCharacter={viewAsCharacter}
-            encounterSummaries={encounterSummaries}
-            allCharacters={plan.characters as RaidPlanCharacter[]}
-            onEncounterClick={setActiveTab}
-          />
-        )}
+        {viewAsCharacterId !== null &&
+          viewAsCharacter &&
+          encounterSummaries.length > 0 && (
+            <CharacterSummaryPanel
+              viewAsCharacter={viewAsCharacter}
+              encounterSummaries={encounterSummaries}
+              allCharacters={plan.characters as RaidPlanCharacter[]}
+              onEncounterClick={setActiveTab}
+            />
+          )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="mt-2 grid gap-6 lg:grid-cols-[165px_minmax(0,_1fr)]">

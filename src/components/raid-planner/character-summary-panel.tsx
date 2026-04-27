@@ -51,54 +51,44 @@ export function CharacterSummaryPanel({
     <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
       {/* Summary line */}
       <div className="flex items-start justify-between gap-3 px-3 py-2">
-        {encounterSummaries.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground">
-            No assignments found for{" "}
-            <span className="font-semibold">{viewAsCharacter.name}</span> — show
-            up, stay alive, and try not to stand in the bad. GLHF.
-          </p>
-        ) : (
-          <p className="flex-1 text-sm leading-relaxed">
-            {viewAsCharacter.class && (
-              <ClassIcon
-                characterClass={viewAsCharacter.class}
-                px={16}
-                className="mr-1 inline-block align-middle"
-              />
-            )}
-            <span
-              className="font-bold"
-              style={classColor ? { color: classColor } : undefined}
-            >
-              {viewAsCharacter.name}
-            </span>{" "}
-            has assignments in{" "}
-            {summaryEncounters.map((s, i) => (
-              <span key={s.encounterId}>
-                <span className="font-semibold text-foreground">
-                  {s.encounterName}
-                </span>
-                {i < summaryEncounters.length - 1 ? ", " : ""}
-              </span>
-            ))}
-            {remainingCount > 0 &&
-              `, and ${remainingCount} more encounter${remainingCount !== 1 ? "s" : ""}.`}
-          </p>
-        )}
-        {encounterSummaries.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowDetails((v) => !v)}
-            className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:border-muted-foreground hover:text-foreground"
+        <p className="flex-1 text-sm leading-relaxed">
+          {viewAsCharacter.class && (
+            <ClassIcon
+              characterClass={viewAsCharacter.class}
+              px={16}
+              className="mr-1 inline-block align-middle"
+            />
+          )}
+          <span
+            className="font-bold"
+            style={classColor ? { color: classColor } : undefined}
           >
-            {showDetails ? (
-              <ChevronUp className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
-            )}
-            {showDetails ? "Hide details" : "Show details"}
-          </button>
-        )}
+            {viewAsCharacter.name}
+          </span>{" "}
+          has assignments in{" "}
+          {summaryEncounters.map((s, i) => (
+            <span key={s.encounterId}>
+              <span className="font-semibold text-foreground">
+                {s.encounterName}
+              </span>
+              {i < summaryEncounters.length - 1 ? ", " : ""}
+            </span>
+          ))}
+          {remainingCount > 0 &&
+            `, and ${remainingCount} more encounter${remainingCount !== 1 ? "s" : ""}.`}
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowDetails((v) => !v)}
+          className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:border-muted-foreground hover:text-foreground"
+        >
+          {showDetails ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+          {showDetails ? "Hide details" : "Show details"}
+        </button>
       </div>
 
       {/* Encounter list — two compact columns, left-aligned */}
