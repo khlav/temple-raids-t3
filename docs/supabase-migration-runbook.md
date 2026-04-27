@@ -6,23 +6,22 @@ This project uses Supabase as hosted Postgres only. Application auth remains in 
 
 Supabase exposes two pooler endpoints. The `db.<ref>.supabase.co` direct connection hostname is not available on newer Supabase projects — use the pooler URLs exclusively.
 
-| Endpoint                             | Port   | Mode        | Use for                                        |
-| ------------------------------------ | ------ | ----------- | ---------------------------------------------- |
-| `aws-1-<region>.pooler.supabase.com` | `6543` | Transaction | Vercel/serverless runtime (`DATABASE_URL`)     |
-| `aws-1-<region>.pooler.supabase.com` | `5432` | Session     | Migrations, `pg_dump`, `pg_restore`, local dev |
+| Endpoint                             | Port   | Mode    | Use for                                          |
+| ------------------------------------ | ------ | ------- | ------------------------------------------------ |
+| `aws-1-<region>.pooler.supabase.com` | `5432` | Session | Vercel, Migrations, `pg_dump`, `pg_restore`, dev |
 
-- `DATABASE_URL`: runtime application traffic. Use the **transaction pooler (port 6543)** on Vercel.
+- `DATABASE_URL`: runtime application traffic. Use the **session pooler (port 5432)** for all environments.
 - `DATABASE_MIGRATION_URL`: schema admin, dump/restore, and Drizzle migration traffic. Use the **session pooler (port 5432)**.
 
-The runtime client in `src/server/db/index.ts` automatically disables prepared statements when `DATABASE_URL` points at port `6543`, which is required for Supabase transaction pooling.
+The session pooler (port 5432) supports all PostgreSQL features, including prepared statements, which avoids the issues encountered with the transaction pooler (port 6543).
 
 ## Recommended Environment Variables
 
 ```bash
-# Runtime (transaction pooler, port 6543 — Vercel/serverless)
-DATABASE_URL=postgresql://postgres.<ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres
+# Runtime (session pooler, port 5432)
+DATABASE_URL=postgresql://postgres.<ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres
 
-# Migrations (session pooler, port 5432 — pg_dump/pg_restore safe)
+# Migrations (session pooler, port 5432)
 DATABASE_MIGRATION_URL=postgresql://postgres.<ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres
 
 NEON_DATABASE_URL=postgresql://...          # source for production export
@@ -167,7 +166,7 @@ pnpm db:migration:compare
 - Raid create/edit flows work.
 - Report queries work.
 - New inserts do not collide on sequence-backed IDs.
-- Runtime traffic through Supabase pooler works without prepared-statement errors.
+- Runtime traffic through Supabase session pooler (port 5432) works correctly.
 
 ## Rollback
 
