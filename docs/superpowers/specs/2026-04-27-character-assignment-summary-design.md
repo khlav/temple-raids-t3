@@ -34,18 +34,20 @@ The panel renders between the `<Separator>` and the `<Tabs>` block in `RaidPlanP
 - Character name is class-colored and bold.
 - Encounter names are white and bold.
 - Slot names render as small purple-tinted role pills.
-- First 3 encounters shown inline; when there are more than 3, the remainder is collapsed into a muted italic "and N more encounters." tail. When there are 3 or fewer, no tail is shown.
+- First 3 encounters shown inline; when there are more than 3, the remainder is collapsed into an "and N more encounters." tail (normal weight, not muted or italic). When there are 3 or fewer, no tail is shown.
 - Default/Trash is included if the character has assignments there; it appears as "Default/Trash" and sorts first.
 
 ### Collapsible details
 
 - A "Hide details / Show details" toggle button sits at the top-right of the panel.
 - Details are **expanded by default**.
-- Details section contains one block per encounter (same order as the summary line: Default/Trash first, then by encounter `sortOrder`).
+- Details section lays out encounter blocks in a responsive grid: 3 columns on `lg`, 2 columns on `md`, 1 column on smaller screens.
 - Each block shows:
-  - The encounter name as a small header with a purple left-border accent.
+  - The encounter name as a small clickable header with a purple left-border accent. Clicking it sets `activeTab` to that encounter's ID (switching the encounter view below). Default/Trash sets `activeTab` to `"default"`.
   - A monospace AA block containing only the template lines relevant to the character (see Line Extraction below), rendered via the existing `AATemplateRenderer` in `readOnly` + `hideUnassigned` mode, with `userCharacterIds` passed for highlighting.
   - The character's name is highlighted inside the AA block with a purple-tinted background badge.
+  - The entire block has a hover state (subtle border brightening) to indicate it's clickable.
+- Blocks are ordered: Default/Trash first, then by encounter `sortOrder`.
 
 ### No-assignments state
 
@@ -97,6 +99,7 @@ interface CharacterSummaryPanelProps {
   encounterSummaries: CharacterEncounterSummary[];
   allCharacters: RaidPlanCharacter[];
   userCharacterIds: number[];
+  onEncounterClick: (encounterId: string) => void; // switches active tab in parent
 }
 ```
 
