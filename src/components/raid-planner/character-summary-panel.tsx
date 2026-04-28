@@ -91,11 +91,11 @@ export function CharacterSummaryPanel({
         </button>
       </div>
 
-      {/* Encounter list — single column */}
+      {/* Encounter list — single column on mobile, two columns on larger screens */}
       {showDetails && encounterSummaries.length > 0 && (
         <div className="border-t border-border px-3 py-2">
           <TooltipProvider delayDuration={300}>
-            <div className="flex flex-col">
+            <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
               {encounterSummaries.map((summary) => (
                 <Tooltip key={summary.encounterId}>
                   <TooltipTrigger asChild>
