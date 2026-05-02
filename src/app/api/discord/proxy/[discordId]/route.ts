@@ -20,11 +20,23 @@ const ProxySchema = z.object({
     .string()
     .min(1)
     .startsWith("/")
-    .refine(
-      (p) =>
-        !p.toLowerCase().startsWith("/admin/proxy") &&
-        !p.toLowerCase().startsWith("/discord/proxy"),
-      { message: "Recursive proxy calls are not allowed" },
+    .transform((p) => {
+      try {
+        const normalized = new URL(`http://x/api/v1${p}`).pathname;
+        return normalized.slice("/api/v1".length) || "/";
+      } catch {
+        return p;
+      }
+    })
+    .pipe(
+      z
+        .string()
+        .startsWith("/")
+        .refine(
+          (p) =>
+            !p.startsWith("/discord/proxy") && !p.startsWith("/admin/proxy"),
+          { message: "Recursive proxy calls are not allowed" },
+        ),
     ),
   body: z.unknown().optional(),
 });
@@ -37,6 +49,11 @@ export async function POST(
     // 1. Verify bot service key (same pattern as all /api/discord/* endpoints)
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${env.TEMPLE_WEB_API_TOKEN}`) {
+      console.warn("Unauthorized discord proxy attempt", {
+        ip: request.headers.get("x-forwarded-for"),
+        userAgent: request.headers.get("user-agent"),
+        timestamp: new Date().toISOString(),
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -59,6 +76,13 @@ export async function POST(
 
     const { method, path, body: proxyBody } = parsed.data;
     const { discordId } = await params;
+
+    if (!/^\d{17,19}$/.test(discordId)) {
+      return NextResponse.json(
+        { error: "Invalid Discord user ID" },
+        { status: 400 },
+      );
+    }
 
     // 3. Look up user by Discord ID via accounts table
     const userResult = await db
@@ -132,7 +156,10 @@ export async function POST(
     const upstreamText = await upstreamResponse.text();
     return new NextResponse(upstreamText, {
       status: upstreamResponse.status,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type":
+          upstreamResponse.headers.get("content-type") ?? "application/json",
+      },
     });
   } catch (error) {
     console.error("discord proxy error:", error);
