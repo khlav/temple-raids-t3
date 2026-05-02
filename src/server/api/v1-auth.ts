@@ -18,9 +18,7 @@ type ValidateApiTokenResult =
     }
   | { error: NextResponse };
 
-export async function validateApiToken(
-  request: Request,
-): Promise<ValidateApiTokenResult> {
+export async function validateApiToken(request: Request): Promise<ValidateApiTokenResult> {
   const authHeader = request.headers.get("authorization");
 
   // Check for missing Authorization header

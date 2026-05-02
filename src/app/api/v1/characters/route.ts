@@ -43,10 +43,7 @@ export async function GET(request: Request) {
         primaryCharacterName: primaryCharacters.name,
       })
       .from(characters)
-      .leftJoin(
-        primaryCharacters,
-        eq(characters.primaryCharacterId, primaryCharacters.characterId),
-      )
+      .leftJoin(primaryCharacters, eq(characters.primaryCharacterId, primaryCharacters.characterId))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .orderBy(characters.name)
       .limit(200);
@@ -54,9 +51,6 @@ export async function GET(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("v1 API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

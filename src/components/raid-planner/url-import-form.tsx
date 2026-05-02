@@ -11,10 +11,7 @@ interface UrlImportFormProps {
   onSuccess?: () => void;
 }
 
-export function UrlImportForm({
-  onEventSelect,
-  onSuccess,
-}: UrlImportFormProps) {
+export function UrlImportForm({ onEventSelect, onSuccess }: UrlImportFormProps) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,11 +70,7 @@ export function UrlImportForm({
             autoFocus
           />
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Import"
-            )}
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
           </Button>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}

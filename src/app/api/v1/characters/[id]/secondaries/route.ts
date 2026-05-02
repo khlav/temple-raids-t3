@@ -10,10 +10,7 @@ const BodySchema = z.object({
   mode: z.enum(["replace", "append"]).default("replace"),
 });
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authResult = await validateApiToken(request);
     if ("error" in authResult) return authResult.error;
@@ -26,10 +23,7 @@ export async function PUT(
     const { id } = await params;
     const primaryId = parseInt(id, 10);
     if (isNaN(primaryId)) {
-      return NextResponse.json(
-        { error: "Invalid character ID" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid character ID" }, { status: 400 });
     }
 
     let body: unknown;
@@ -62,17 +56,13 @@ export async function PUT(
     });
 
     if (!primary) {
-      return NextResponse.json(
-        { error: "Character not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Character not found" }, { status: 404 });
     }
 
     if (!primary.isPrimary) {
       return NextResponse.json(
         {
-          error:
-            "Character is not a primary (it may be a secondary of another character)",
+          error: "Character is not a primary (it may be a secondary of another character)",
         },
         { status: 400 },
       );
@@ -118,9 +108,6 @@ export async function PUT(
     });
   } catch (error) {
     console.error("v1 API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

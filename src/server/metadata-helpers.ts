@@ -65,10 +65,7 @@ export async function getRaidMetadataWithStats(raidId: number) {
         participantCount: sql<number>`count(${raidLogAttendeeMap.characterId})`,
       })
       .from(raidLogs)
-      .leftJoin(
-        raidLogAttendeeMap,
-        eq(raidLogs.raidLogId, raidLogAttendeeMap.raidLogId),
-      )
+      .leftJoin(raidLogAttendeeMap, eq(raidLogs.raidLogId, raidLogAttendeeMap.raidLogId))
       .where(eq(raidLogs.raidId, raidId))
       .groupBy(
         raidLogs.raidLogId,
@@ -93,14 +90,8 @@ export async function getRaidMetadataWithStats(raidId: number) {
         classCount: sql<number>`count(${characters.characterId})`,
       })
       .from(raidLogs)
-      .leftJoin(
-        raidLogAttendeeMap,
-        eq(raidLogs.raidLogId, raidLogAttendeeMap.raidLogId),
-      )
-      .leftJoin(
-        characters,
-        eq(raidLogAttendeeMap.characterId, characters.characterId),
-      )
+      .leftJoin(raidLogAttendeeMap, eq(raidLogs.raidLogId, raidLogAttendeeMap.raidLogId))
+      .leftJoin(characters, eq(raidLogAttendeeMap.characterId, characters.characterId))
       .where(eq(raidLogs.raidId, raidId))
       .groupBy(characters.class);
 
@@ -190,10 +181,7 @@ export async function getCharacterMetadataWithStats(characterId: number) {
       })
       .from(raids)
       .leftJoin(raidLogs, eq(raids.raidId, raidLogs.raidId))
-      .leftJoin(
-        raidLogAttendeeMap,
-        eq(raidLogs.raidLogId, raidLogAttendeeMap.raidLogId),
-      )
+      .leftJoin(raidLogAttendeeMap, eq(raidLogs.raidLogId, raidLogAttendeeMap.raidLogId))
       .where(eq(raidLogAttendeeMap.characterId, characterId));
 
     const benchedRaidsResult = await db
@@ -222,10 +210,7 @@ export async function getCharacterMetadataWithStats(characterId: number) {
       })
       .from(raids)
       .leftJoin(raidLogs, eq(raids.raidId, raidLogs.raidId))
-      .leftJoin(
-        raidLogAttendeeMap,
-        eq(raidLogs.raidLogId, raidLogAttendeeMap.raidLogId),
-      )
+      .leftJoin(raidLogAttendeeMap, eq(raidLogs.raidLogId, raidLogAttendeeMap.raidLogId))
       .where(eq(raidLogAttendeeMap.characterId, characterId));
 
     const benchedRaids = await db
@@ -284,10 +269,7 @@ export async function getCharacterMetadataWithStats(characterId: number) {
         recipeCount: sql<number>`count(${recipes.recipeSpellId})`,
       })
       .from(recipes)
-      .innerJoin(
-        characterRecipeMap,
-        eq(recipes.recipeSpellId, characterRecipeMap.recipeSpellId),
-      )
+      .innerJoin(characterRecipeMap, eq(recipes.recipeSpellId, characterRecipeMap.recipeSpellId))
       .where(eq(characterRecipeMap.characterId, characterId))
       .groupBy(recipes.profession);
 
@@ -306,9 +288,7 @@ export async function getCharacterMetadataWithStats(characterId: number) {
 }
 
 // Breadcrumb-specific helpers that return just the name for breadcrumb display
-export async function getRaidBreadcrumbName(
-  raidId: number,
-): Promise<string | null> {
+export async function getRaidBreadcrumbName(raidId: number): Promise<string | null> {
   try {
     const raidResult = await db
       .select({
@@ -325,9 +305,7 @@ export async function getRaidBreadcrumbName(
   }
 }
 
-export async function getCharacterBreadcrumbName(
-  characterId: number,
-): Promise<string | null> {
+export async function getCharacterBreadcrumbName(characterId: number): Promise<string | null> {
   try {
     const characterResult = await db
       .select({
@@ -365,8 +343,7 @@ function getExpectedBossCount(zone: string): number {
 
 // Helper function to get class composition
 function getClassComposition(raidData: any): string {
-  if (!raidData.participantClasses || raidData.participantClasses.length === 0)
-    return "";
+  if (!raidData.participantClasses || raidData.participantClasses.length === 0) return "";
 
   // Sort classes by count (descending) and include all present classes
   const sortedClasses = raidData.participantClasses
@@ -377,8 +354,7 @@ function getClassComposition(raidData: any): string {
 
   // Format as "X Warriors, Y Mages, Z Priests, etc."
   const classStrings = sortedClasses.map(
-    (pc: any) =>
-      `${Number(pc.classCount)} ${pc.class}${Number(pc.classCount) > 1 ? "s" : ""}`,
+    (pc: any) => `${Number(pc.classCount)} ${pc.class}${Number(pc.classCount) > 1 ? "s" : ""}`,
   );
 
   return classStrings.join(", ");
@@ -432,9 +408,7 @@ function generateCharacterStoryDescription(characterData: any): string {
       0,
     );
     const professionCount = characterRecipes.length;
-    const professionNames = characterRecipes.map((recipe: any) =>
-      recipe.profession.toLowerCase(),
-    );
+    const professionNames = characterRecipes.map((recipe: any) => recipe.profession.toLowerCase());
 
     let professionText = "";
     if (professionCount === 1) {
@@ -456,9 +430,7 @@ function generateCharacterStoryDescription(characterData: any): string {
 
   // Add secondary characters information
   if (secondaryCharacters && secondaryCharacters.length > 0) {
-    const altNames = secondaryCharacters
-      .map((alt: any) => `${alt.name} (${alt.class})`)
-      .join(", ");
+    const altNames = secondaryCharacters.map((alt: any) => `${alt.name} (${alt.class})`).join(", ");
     story += `. Also plays ${altNames}`;
   }
 
@@ -482,9 +454,7 @@ function generateRaidStoryDescription(raidData: any): string {
   // Get raid time from logs
   let raidTime = "";
   if (raidData.raidLogs && raidData.raidLogs.length > 0) {
-    const startTimes = raidData.raidLogs
-      .map((log: any) => log.startTimeUTC)
-      .filter(Boolean);
+    const startTimes = raidData.raidLogs.map((log: any) => log.startTimeUTC).filter(Boolean);
     if (startTimes.length > 0) {
       const earliestStart = new Date(
         Math.min(...startTimes.map((t: any) => new Date(t).getTime())),
@@ -509,27 +479,19 @@ function generateRaidStoryDescription(raidData: any): string {
   // Calculate completion count
   const expectedBosses = getExpectedBossCount(raidData.zone);
   const completionText =
-    expectedBosses > 0
-      ? `${allKills.length} of ${expectedBosses}`
-      : `${allKills.length} bosses`;
+    expectedBosses > 0 ? `${allKills.length} of ${expectedBosses}` : `${allKills.length} bosses`;
 
   // Calculate raid duration
   let durationText = "";
   if (raidData.raidLogs && raidData.raidLogs.length > 0) {
-    const startTimes = raidData.raidLogs
-      .map((log: any) => log.startTimeUTC)
-      .filter(Boolean);
-    const endTimes = raidData.raidLogs
-      .map((log: any) => log.endTimeUTC)
-      .filter(Boolean);
+    const startTimes = raidData.raidLogs.map((log: any) => log.startTimeUTC).filter(Boolean);
+    const endTimes = raidData.raidLogs.map((log: any) => log.endTimeUTC).filter(Boolean);
 
     if (startTimes.length > 0 && endTimes.length > 0) {
       const earliestStart = new Date(
         Math.min(...startTimes.map((t: any) => new Date(t).getTime())),
       );
-      const latestEnd = new Date(
-        Math.max(...endTimes.map((t: any) => new Date(t).getTime())),
-      );
+      const latestEnd = new Date(Math.max(...endTimes.map((t: any) => new Date(t).getTime())));
       const durationMs = latestEnd.getTime() - earliestStart.getTime();
       const durationMinutes = Math.round(durationMs / (1000 * 60));
       const roundedMinutes = Math.round(durationMinutes / 10) * 10;
@@ -581,8 +543,7 @@ export function generateRaidMetadata(raidData: any, raidId: number) {
   const description = generateRaidStoryDescription(raidData);
 
   // Build Open Graph data
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.temple-era.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.temple-era.com";
   const openGraph = {
     title: `${siteConfig.name} | ${title}`,
     description,
@@ -621,10 +582,7 @@ export function generateRaidMetadata(raidData: any, raidId: number) {
   };
 }
 
-export function generateCharacterMetadata(
-  characterData: any,
-  characterId: number,
-) {
+export function generateCharacterMetadata(characterData: any, characterId: number) {
   if (!characterData) {
     return {
       title: `Character ${characterId}`,
@@ -639,8 +597,7 @@ export function generateCharacterMetadata(
   const description = generateCharacterStoryDescription(characterData);
 
   // Build Open Graph data
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.temple-era.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.temple-era.com";
   const openGraph = {
     title: `${siteConfig.name} | ${title}`,
     description,

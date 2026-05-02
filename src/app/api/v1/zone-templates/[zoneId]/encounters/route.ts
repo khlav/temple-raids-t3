@@ -5,11 +5,7 @@ import { validateApiToken } from "~/server/api/v1-auth";
 import { slugifyEncounterName } from "~/server/api/helpers/raid-plan-helpers";
 import { db } from "~/server/db";
 import { raidPlanTemplateEncounters } from "~/server/db/schema";
-import {
-  getZoneConfig,
-  upsertZoneTemplate,
-  validateGroupOwnership,
-} from "../../_helpers";
+import { getZoneConfig, upsertZoneTemplate, validateGroupOwnership } from "../../_helpers";
 
 const AddEncounterSchema = z.object({
   encounterName: z.string().min(1).max(256),
@@ -17,10 +13,7 @@ const AddEncounterSchema = z.object({
   aaTemplate: z.string().optional(),
 });
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ zoneId: string }> },
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ zoneId: string }> }) {
   try {
     const authResult = await validateApiToken(request);
     if ("error" in authResult) return authResult.error;
@@ -53,10 +46,7 @@ export async function POST(
     const { id: templateId } = await upsertZoneTemplate(zoneId, user.id);
 
     if (parsed.data.groupId) {
-      const group = await validateGroupOwnership(
-        parsed.data.groupId,
-        templateId,
-      );
+      const group = await validateGroupOwnership(parsed.data.groupId, templateId);
       if (!group) {
         return NextResponse.json({ error: "Group not found" }, { status: 404 });
       }
@@ -91,9 +81,6 @@ export async function POST(
     return NextResponse.json(newEncounter[0]!, { status: 201 });
   } catch (error) {
     console.error("v1 API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

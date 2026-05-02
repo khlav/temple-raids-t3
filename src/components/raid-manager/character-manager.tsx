@@ -34,8 +34,7 @@ export function CharacterManager() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
 
-  const { data: characterData, isSuccess } =
-    api.character.getCharactersWithSecondaries.useQuery();
+  const { data: characterData, isSuccess } = api.character.getCharactersWithSecondaries.useQuery();
 
   // Function to normalize text (remove non-ASCII characters and convert to lowercase)
   const normalizeText = (text: string) => {
@@ -51,18 +50,12 @@ export function CharacterManager() {
     ? characterData.sort(SortRaiders).filter((player) => {
         return Object.values({
           ...player,
-          secondaryCharacterNames: player.secondaryCharacters.map(
-            (c) => c.name,
-          ),
-          secondaryCharacterClasses: player.secondaryCharacters.map(
-            (c) => c.class,
-          ),
+          secondaryCharacterNames: player.secondaryCharacters.map((c) => c.name),
+          secondaryCharacterClasses: player.secondaryCharacters.map((c) => c.class),
           isIgnored: player.isIgnored ? "ignored" : "",
         }).some((value) => {
           // Normalize and check if any field contains the search term
-          const stringValue = Array.isArray(value)
-            ? value.map(String).join(" ")
-            : String(value);
+          const stringValue = Array.isArray(value) ? value.map(String).join(" ") : String(value);
           return normalizeText(stringValue).includes(normalizeText(searchTerm));
         });
       })
@@ -84,9 +77,7 @@ export function CharacterManager() {
           <TableSearchTips>
             <p className="mb-1 font-medium">Search tips:</p>
             <ul className="list-disc space-y-1 pl-4">
-              <li>
-                Search across primary and secondary character names/classes
-              </li>
+              <li>Search across primary and secondary character names/classes</li>
               <li>
                 Includes status keywords like{" "}
                 <span className="font-mono text-chart-3">ignored</span>
@@ -114,14 +105,9 @@ export function CharacterManager() {
             <tbody className="[&_tr:last-child]:border-0">
               {isSuccess ? (
                 <>
-                  {filteredPlayers
-                    ?.sort(SortRaiders)
-                    .map((character: RaidParticipant) => (
-                      <CharacterManagerRow
-                        key={character.characterId}
-                        character={character}
-                      />
-                    ))}
+                  {filteredPlayers?.sort(SortRaiders).map((character: RaidParticipant) => (
+                    <CharacterManagerRow key={character.characterId} character={character} />
+                  ))}
                 </>
               ) : (
                 <CharacterManagerRowSkeleton />

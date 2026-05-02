@@ -122,9 +122,7 @@ export async function fetchDiscordMessages(): Promise<DiscordMessage[]> {
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Discord API error: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`Discord API error: ${response.status} ${response.statusText}`);
   }
 
   const messages: DiscordMessage[] = await response.json();
@@ -134,9 +132,7 @@ export async function fetchDiscordMessages(): Promise<DiscordMessage[]> {
   // Debug: Check if message content is accessible (privileged intent issue)
   if (messages.length > 0) {
     const firstMessage = messages[0];
-    console.log(
-      `First message content length: ${firstMessage?.content.length ?? 0}`,
-    );
+    console.log(`First message content length: ${firstMessage?.content.length ?? 0}`);
     console.log(
       `First message content preview: "${firstMessage?.content.substring(0, 100) ?? ""}"`,
     );
@@ -153,9 +149,7 @@ export async function fetchDiscordMessages(): Promise<DiscordMessage[]> {
     console.log("Message timestamps (newest first):");
     messages.slice(0, 5).forEach((msg, i) => {
       const msgDate = new Date(msg.timestamp);
-      console.log(
-        `  ${i + 1}. ${msgDate.toISOString()} - ${msg.content.substring(0, 50)}...`,
-      );
+      console.log(`  ${i + 1}. ${msgDate.toISOString()} - ${msg.content.substring(0, 50)}...`);
     });
   }
 
@@ -197,9 +191,7 @@ export async function getDiscordChannelInfo(): Promise<DiscordChannelInfo> {
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Discord API error: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`Discord API error: ${response.status} ${response.statusText}`);
   }
 
   const channel = await response.json();
@@ -225,12 +217,7 @@ async function getWebsiteUserForDiscordId(discordUserId: string) {
       })
       .from(users)
       .innerJoin(accounts, eq(users.id, accounts.userId))
-      .where(
-        and(
-          eq(accounts.provider, "discord"),
-          eq(accounts.providerAccountId, discordUserId),
-        ),
-      )
+      .where(and(eq(accounts.provider, "discord"), eq(accounts.providerAccountId, discordUserId)))
       .limit(1);
 
     return result[0] || null;
@@ -261,10 +248,7 @@ export async function getDiscordWarcraftLogs(): Promise<DiscordWarcraftLog[]> {
         websiteUser: websiteUser
           ? {
               id: websiteUser.id,
-              name:
-                websiteUser.name ||
-                message.author.global_name ||
-                message.author.username,
+              name: websiteUser.name || message.author.global_name || message.author.username,
               image: websiteUser.image || "",
             }
           : undefined,
@@ -274,9 +258,7 @@ export async function getDiscordWarcraftLogs(): Promise<DiscordWarcraftLog[]> {
 
   // Sort by timestamp (most recent first) - Discord API already returns in reverse chronological order
   // but we want to ensure it's properly sorted
-  return wclLogs.sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-  );
+  return wclLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
 
 /**
@@ -402,10 +384,8 @@ export function extractSoftResUrls(
       }
 
       if (embed.url) addRaidIds(extractSoftResRaidIds(embed.url), embedTitle);
-      if (embed.title)
-        addRaidIds(extractSoftResRaidIds(embed.title), embedTitle);
-      if (embed.description)
-        addRaidIds(extractSoftResRaidIds(embed.description), embedTitle);
+      if (embed.title) addRaidIds(extractSoftResRaidIds(embed.title), embedTitle);
+      if (embed.description) addRaidIds(extractSoftResRaidIds(embed.description), embedTitle);
       if (embed.fields) {
         for (const field of embed.fields) {
           addRaidIds(extractSoftResRaidIds(field.name), embedTitle);
@@ -473,10 +453,7 @@ export async function fetchDiscordMessagesMultiChannel(
         channelId,
       })) as DiscordMessageWithChannel[];
     } catch (error) {
-      console.error(
-        `[SoftRes Fetch] Failed to fetch messages from channel ${channelId}:`,
-        error,
-      );
+      console.error(`[SoftRes Fetch] Failed to fetch messages from channel ${channelId}:`, error);
       return [];
     }
   });
@@ -547,10 +524,7 @@ function hasBenchButton(message: DiscordMessageWithChannel): boolean {
   for (const row of message.components) {
     if (row.components) {
       for (const component of row.components) {
-        if (
-          component.label &&
-          component.label.toLowerCase().includes("bench")
-        ) {
+        if (component.label && component.label.toLowerCase().includes("bench")) {
           return true;
         }
       }
@@ -565,9 +539,7 @@ function hasBenchButton(message: DiscordMessageWithChannel): boolean {
  */
 export async function getDiscordSoftResLinks(): Promise<DiscordSoftResLink[]> {
   const channelIds = env.DISCORD_RAID_SR_CHANNEL_IDS;
-  console.log(
-    `[SoftRes] Scanning ${channelIds.length} channels for SoftRes links`,
-  );
+  console.log(`[SoftRes] Scanning ${channelIds.length} channels for SoftRes links`);
 
   // Fetch messages from all channels
   const messages = await fetchDiscordMessagesMultiChannel(channelIds);
@@ -592,9 +564,7 @@ export async function getDiscordSoftResLinks(): Promise<DiscordSoftResLink[]> {
     const isWithin7Days = messageDate >= sevenDaysAgo;
     const isSignupMessage = hasBenchButton(message);
 
-    return (
-      isRaidHelperBot && hasSoftResUrls && isSignupMessage && isWithin7Days
-    );
+    return isRaidHelperBot && hasSoftResUrls && isSignupMessage && isWithin7Days;
   });
 
   // Extract SoftRes links with context
@@ -605,9 +575,7 @@ export async function getDiscordSoftResLinks(): Promise<DiscordSoftResLink[]> {
     const channelInfo = channelInfoMap.get(message.channelId);
 
     if (!channelInfo) {
-      console.error(
-        `[SoftRes] No channel info found for channel ${message.channelId}`,
-      );
+      console.error(`[SoftRes] No channel info found for channel ${message.channelId}`);
       continue;
     }
 
@@ -648,9 +616,7 @@ export async function getDiscordSoftResLinks(): Promise<DiscordSoftResLink[]> {
     return aTime - bTime; // Ascending order (earliest first)
   });
 
-  console.log(
-    `[SoftRes] Found ${finalLinks.length} RaidHelper posts with SoftRes links`,
-  );
+  console.log(`[SoftRes] Found ${finalLinks.length} RaidHelper posts with SoftRes links`);
 
   return finalLinks;
 }

@@ -1,8 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  getRaidMetadataWithStats,
-  generateRaidMetadata,
-} from "~/server/metadata-helpers";
+import { getRaidMetadataWithStats, generateRaidMetadata } from "~/server/metadata-helpers";
 import { auth } from "~/server/auth";
 
 export async function GET(
@@ -12,10 +9,7 @@ export async function GET(
   // Check authentication and admin privileges
   const session = await auth();
   if (!session?.user?.isAdmin) {
-    return NextResponse.json(
-      { error: "Unauthorized - Admin access required" },
-      { status: 403 },
-    );
+    return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403 });
   }
 
   const { raidId } = await params;
@@ -37,9 +31,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error fetching raid metadata:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

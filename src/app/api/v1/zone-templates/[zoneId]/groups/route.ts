@@ -3,20 +3,14 @@ import { z } from "zod";
 import { eq, max } from "drizzle-orm";
 import { validateApiToken } from "~/server/api/v1-auth";
 import { db } from "~/server/db";
-import {
-  raidPlanTemplateEncounters,
-  raidPlanTemplateEncounterGroups,
-} from "~/server/db/schema";
+import { raidPlanTemplateEncounters, raidPlanTemplateEncounterGroups } from "~/server/db/schema";
 import { getZoneConfig, upsertZoneTemplate } from "../../_helpers";
 
 const CreateGroupSchema = z.object({
   groupName: z.string().min(1).max(256),
 });
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ zoneId: string }> },
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ zoneId: string }> }) {
   try {
     const authResult = await validateApiToken(request);
     if ("error" in authResult) return authResult.error;
@@ -79,9 +73,6 @@ export async function POST(
     return NextResponse.json(newGroup[0]!, { status: 201 });
   } catch (error) {
     console.error("v1 API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

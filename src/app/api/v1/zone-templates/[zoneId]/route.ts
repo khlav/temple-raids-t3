@@ -12,10 +12,7 @@ import {
 } from "~/server/db/schema";
 import { getZoneConfig, upsertZoneTemplate } from "../_helpers";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ zoneId: string }> },
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ zoneId: string }> }) {
   try {
     const authResult = await validateApiToken(request);
     if ("error" in authResult) return authResult.error;
@@ -90,10 +87,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("v1 API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -102,10 +96,7 @@ const PatchZoneTemplateSchema = z.object({
   defaultAATemplate: z.string().max(10000).nullable().optional(),
 });
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ zoneId: string }> },
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ zoneId: string }> }) {
   try {
     const authResult = await validateApiToken(request);
     if ("error" in authResult) return authResult.error;
@@ -138,10 +129,7 @@ export async function PATCH(
 
     const input = parsed.data;
     if (Object.keys(input).length === 0) {
-      return NextResponse.json(
-        { error: "No fields provided" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "No fields provided" }, { status: 400 });
     }
 
     const { id: templateId } = await upsertZoneTemplate(zoneId, user.id);
@@ -151,8 +139,7 @@ export async function PATCH(
       defaultAATemplate: string | null;
     }> = {};
     if (input.isActive !== undefined) updates.isActive = input.isActive;
-    if (input.defaultAATemplate !== undefined)
-      updates.defaultAATemplate = input.defaultAATemplate;
+    if (input.defaultAATemplate !== undefined) updates.defaultAATemplate = input.defaultAATemplate;
 
     const result = await db
       .update(raidPlanTemplates)
@@ -173,9 +160,6 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("v1 API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

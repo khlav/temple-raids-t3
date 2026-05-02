@@ -35,9 +35,7 @@ export interface TRPCContext {
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: {
-  headers: Headers;
-}): Promise<TRPCContext> => {
+export const createTRPCContext = async (opts: { headers: Headers }): Promise<TRPCContext> => {
   let session: Session | null | undefined = undefined;
   let sessionPromise: Promise<Session | null> | null = null;
 
@@ -109,8 +107,7 @@ const t = initTRPC.context<TRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
+        zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
       },
     };
   },
@@ -181,24 +178,22 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  *
  * @see https://trpc.io/docs/procedures
  */
-export const protectedProcedure = t.procedure
-  .use(timingMiddleware)
-  .use(async ({ ctx, next }) => {
-    const session = await ctx.getSession();
+export const protectedProcedure = t.procedure.use(timingMiddleware).use(async ({ ctx, next }) => {
+  const session = await ctx.getSession();
 
-    if (!session?.user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: `Unauthorized - Login required`,
-      });
-    }
-    return next({
-      ctx: {
-        // infers the `session` as non-nullable
-        session,
-      },
+  if (!session?.user) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: `Unauthorized - Login required`,
     });
+  }
+  return next({
+    ctx: {
+      // infers the `session` as non-nullable
+      session,
+    },
   });
+});
 
 /**
  * Raid Manager (authenticated) procedure
@@ -208,24 +203,22 @@ export const protectedProcedure = t.procedure
  *
  * @see https://trpc.io/docs/procedures
  */
-export const raidManagerProcedure = t.procedure
-  .use(timingMiddleware)
-  .use(async ({ ctx, next }) => {
-    const session = await ctx.getSession();
+export const raidManagerProcedure = t.procedure.use(timingMiddleware).use(async ({ ctx, next }) => {
+  const session = await ctx.getSession();
 
-    if (!session || !session.user || !session.user.isRaidManager) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: `Unauthorized - Raid managers only`,
-      });
-    }
-    return next({
-      ctx: {
-        // infers the `session` as non-nullable
-        session,
-      },
+  if (!session || !session.user || !session.user.isRaidManager) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: `Unauthorized - Raid managers only`,
     });
+  }
+  return next({
+    ctx: {
+      // infers the `session` as non-nullable
+      session,
+    },
   });
+});
 
 /**
  * Admin (authenticated) procedure
@@ -235,21 +228,19 @@ export const raidManagerProcedure = t.procedure
  *
  * @see https://trpc.io/docs/procedures
  */
-export const adminProcedure = t.procedure
-  .use(timingMiddleware)
-  .use(async ({ ctx, next }) => {
-    const session = await ctx.getSession();
+export const adminProcedure = t.procedure.use(timingMiddleware).use(async ({ ctx, next }) => {
+  const session = await ctx.getSession();
 
-    if (!session || !session.user || !session.user.isAdmin) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: `Unauthorized - Admin only`,
-      });
-    }
-    return next({
-      ctx: {
-        // infers the `session` as non-nullable
-        session,
-      },
+  if (!session || !session.user || !session.user.isAdmin) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: `Unauthorized - Admin only`,
     });
+  }
+  return next({
+    ctx: {
+      // infers the `session` as non-nullable
+      session,
+    },
   });
+});

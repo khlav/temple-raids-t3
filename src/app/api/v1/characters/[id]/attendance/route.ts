@@ -9,10 +9,7 @@ import {
 } from "~/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authResult = await validateApiToken(request);
     if ("error" in authResult) return authResult.error;
@@ -20,10 +17,7 @@ export async function GET(
     const { id } = await params;
     const characterId = parseInt(id, 10);
     if (isNaN(characterId)) {
-      return NextResponse.json(
-        { error: "Invalid character ID" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid character ID" }, { status: 400 });
     }
 
     // Determine primary character ID to query attendance
@@ -34,10 +28,7 @@ export async function GET(
     });
 
     if (!char) {
-      return NextResponse.json(
-        { error: "Character not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Character not found" }, { status: 404 });
     }
 
     // If this character has a primary, use that instead
@@ -59,27 +50,18 @@ export async function GET(
         .leftJoin(
           primaryRaidAttendeeAndBenchMap,
           and(
-            eq(
-              trackedRaidsL6LockoutWk.raidId,
-              primaryRaidAttendeeAndBenchMap.raidId,
-            ),
-            eq(
-              primaryRaidAttendeeAndBenchMap.primaryCharacterId,
-              primaryCharacterId,
-            ),
+            eq(trackedRaidsL6LockoutWk.raidId, primaryRaidAttendeeAndBenchMap.raidId),
+            eq(primaryRaidAttendeeAndBenchMap.primaryCharacterId, primaryCharacterId),
           ),
         )
         .orderBy(trackedRaidsL6LockoutWk.date),
       db
         .select({
-          weightedAttendancePct:
-            primaryRaidAttendanceL6LockoutWk.weightedAttendancePct,
+          weightedAttendancePct: primaryRaidAttendanceL6LockoutWk.weightedAttendancePct,
           weightedRaidTotal: primaryRaidAttendanceL6LockoutWk.weightedRaidTotal,
         })
         .from(primaryRaidAttendanceL6LockoutWk)
-        .where(
-          eq(primaryRaidAttendanceL6LockoutWk.characterId, primaryCharacterId),
-        )
+        .where(eq(primaryRaidAttendanceL6LockoutWk.characterId, primaryCharacterId))
         .limit(1),
     ]);
 
@@ -102,9 +84,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("v1 API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -12,10 +12,7 @@ const gzipAsync = promisify(gzip);
  * @param request - The incoming request to check for Accept-Encoding header
  * @returns A NextResponse with compressed or uncompressed JSON
  */
-export async function compressResponse(
-  data: unknown,
-  request: Request,
-): Promise<NextResponse> {
+export async function compressResponse(data: unknown, request: Request): Promise<NextResponse> {
   const acceptEncoding = request.headers.get("accept-encoding") || "";
   const supportsGzip = acceptEncoding.includes("gzip");
 

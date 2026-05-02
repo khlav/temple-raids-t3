@@ -9,11 +9,11 @@ pre-commit:
         fi
     lint:
       glob: "src/**/*.{ts,tsx,js,jsx}"
-      run: oxlint --fix {staged_files}
+      run: pnpm exec oxlint --fix {staged_files}
       stage_fixed: true
     format:
       glob: "src/**/*.{ts,tsx,js,jsx}"
-      run: oxfmt {staged_files}
+      run: pnpm exec oxfmt {staged_files}
       stage_fixed: true
     typecheck:
       run: pnpm typecheck

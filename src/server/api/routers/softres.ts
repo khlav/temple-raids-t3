@@ -106,10 +106,7 @@ export const softres = createTRPCRouter({
               raidDate: softResData.raidDate,
             };
           } catch (error) {
-            console.error(
-              `Failed to fetch raid info for ${link.softResRaidId}:`,
-              error,
-            );
+            console.error(`Failed to fetch raid info for ${link.softResRaidId}:`, error);
             // Return link without enrichment if API call fails
             return link;
           }
@@ -150,15 +147,10 @@ export const softres = createTRPCRouter({
       }
 
       // Pre-load item mappings - use all items if zone is unknown
-      const zoneItems = zone
-        ? await getAllItemsForZone(zone)
-        : await getAllItems();
+      const zoneItems = zone ? await getAllItemsForZone(zone) : await getAllItems();
 
       // Step 1: Match all characters in batch (1 query)
-      const characterMatches = await matchCharactersBatch(
-        ctx.db,
-        softresData.reserved,
-      );
+      const characterMatches = await matchCharactersBatch(ctx.db, softresData.reserved);
 
       // Separate matched and unmatched characters
       const matchedCharacterIds: number[] = [];
@@ -259,9 +251,7 @@ export const softres = createTRPCRouter({
           srItemNames: new Map(
             data.srItems
               .map((item) => [item.itemId, item.itemName ?? undefined])
-              .filter(([_, name]) => name !== undefined) as Array<
-              [number, string]
-            >,
+              .filter(([_, name]) => name !== undefined) as Array<[number, string]>,
           ),
           zone: zone ?? null,
         };
@@ -325,9 +315,7 @@ export const softres = createTRPCRouter({
           srItemNames: new Map(
             unmatchedChar.srItems
               .map((item) => [item.itemId, item.itemName ?? undefined])
-              .filter(([_, name]) => name !== undefined) as Array<
-              [number, string]
-            >,
+              .filter(([_, name]) => name !== undefined) as Array<[number, string]>,
           ),
           zone: zone ?? null,
         };
@@ -414,9 +402,7 @@ export const softres = createTRPCRouter({
         }
 
         // Finally, sort alphabetically by character name (case-insensitive)
-        return a.characterName
-          .toLowerCase()
-          .localeCompare(b.characterName.toLowerCase());
+        return a.characterName.toLowerCase().localeCompare(b.characterName.toLowerCase());
       });
 
       return {
