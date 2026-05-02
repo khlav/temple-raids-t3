@@ -164,4 +164,21 @@ export const profile = createTRPCRouter({
 
     return { success: true };
   }),
+
+  setTemplarEnabled: protectedProcedure
+    .input(z.object({ enabled: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const { isRaidManager, isAdmin } = ctx.session.user;
+      if (!isRaidManager && !isAdmin) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only raid managers and admins can manage Templar access.",
+        });
+      }
+      await ctx.db
+        .update(users)
+        .set({ templarEnabled: input.enabled })
+        .where(eq(users.id, ctx.session.user.id));
+      return { templarEnabled: input.enabled };
+    }),
 });
