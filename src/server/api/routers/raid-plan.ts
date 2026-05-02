@@ -2395,6 +2395,12 @@ export const raidPlanRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      // Pre-fetch source encounters for ID list (consistent with applyAACarryForward)
+      const sourceEncounters = await ctx.db
+        .select({ id: raidPlanEncounters.id })
+        .from(raidPlanEncounters)
+        .where(eq(raidPlanEncounters.raidPlanId, input.sourcePlanId));
+
       // Fetch source plan's AA slots with characterId
       const sourceSlots = await ctx.db
         .select({
@@ -2411,13 +2417,12 @@ export const raidPlanRouter = createTRPCRouter({
           and(
             or(
               eq(raidPlanEncounterAASlots.raidPlanId, input.sourcePlanId),
-              inArray(
-                raidPlanEncounterAASlots.encounterId,
-                ctx.db
-                  .select({ id: raidPlanEncounters.id })
-                  .from(raidPlanEncounters)
-                  .where(eq(raidPlanEncounters.raidPlanId, input.sourcePlanId)),
-              ),
+              sourceEncounters.length > 0
+                ? inArray(
+                    raidPlanEncounterAASlots.encounterId,
+                    sourceEncounters.map((e) => e.id),
+                  )
+                : sql`false`,
             ),
             isNotNull(raidPlanCharacters.characterId),
           ),
@@ -2590,12 +2595,10 @@ export const raidPlanRouter = createTRPCRouter({
       }
 
       if (slotsToInsert.length > 0) {
-        await ctx.db.insert(raidPlanEncounterAASlots).values(slotsToInsert);
-        await touchRaidPlanActor(
-          ctx.db,
-          input.targetPlanId,
-          ctx.session.user.id,
-        );
+        await ctx.db.transaction(async (tx) => {
+          await tx.insert(raidPlanEncounterAASlots).values(slotsToInsert);
+          await touchRaidPlanActor(tx, input.targetPlanId, ctx.session.user.id);
+        });
       }
 
       return { slotsCreated: slotsToInsert.length };
