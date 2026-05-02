@@ -253,12 +253,11 @@ export function ApiAccessCard() {
                 }
               />
               <Label htmlFor="templar-enabled" className="text-sm">
-                Enable Templar (Discord ChatBot) to take actions on my behalf
+                Allow Templar (Discord bot) to act when you ask it to
               </Label>
             </div>
             <p className="pl-10 text-xs text-muted-foreground">
-              When disabled, the bot will refuse requests involving your
-              account.
+              When disabled, Templar will ignore your requests.
             </p>
           </div>
         )}
