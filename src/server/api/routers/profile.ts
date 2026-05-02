@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
+import { encryptToken } from "~/server/api/token-crypto";
 
 export const profile = createTRPCRouter({
   getMyProfile: protectedProcedure.query(async ({ ctx }) => {
@@ -134,10 +135,11 @@ export const profile = createTRPCRouter({
 
     const token = `tera_${crypto.randomBytes(16).toString("hex")}`;
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const tokenEncrypted = encryptToken(token);
 
     await ctx.db
       .update(users)
-      .set({ apiToken: tokenHash })
+      .set({ apiToken: tokenHash, apiTokenEncrypted: tokenEncrypted })
       .where(eq(users.id, ctx.session.user.id));
 
     return { token, replaced };
@@ -154,7 +156,7 @@ export const profile = createTRPCRouter({
 
     await ctx.db
       .update(users)
-      .set({ apiToken: null })
+      .set({ apiToken: null, apiTokenEncrypted: null })
       .where(eq(users.id, ctx.session.user.id));
 
     return { success: true };
