@@ -107,7 +107,11 @@ export async function POST(
 
     const targetUser = userResult[0]!;
 
-    // 4. Check opt-in
+    // 4. Check opt-in.
+    // Note: only raid managers/admins can toggle templarEnabled (enforced at the
+    // PATCH /me/templar endpoint and the setTemplarEnabled tRPC mutation). If a
+    // user later loses their manager role, their proxied calls will still be
+    // attempted but will fail at the endpoint level via raidManagerProcedure.
     if (!targetUser.templarEnabled) {
       return NextResponse.json(
         { error: "Templar access not enabled" },
