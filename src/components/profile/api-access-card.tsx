@@ -257,7 +257,8 @@ export function ApiAccessCard() {
               </Label>
             </div>
             <p className="pl-10 text-xs text-muted-foreground">
-              When disabled, Templar will ignore your requests.
+              Templar is currently available to Raid Leads only. When disabled,
+              Templar will ignore your requests.
             </p>
           </div>
         )}
