@@ -181,7 +181,8 @@ export function EncounterSidebar({
               onOpenChange={(open) =>
                 setExpandedGroups((prev) => {
                   const next = new Set(prev);
-                  open ? next.add(item.group.id) : next.delete(item.group.id);
+                  if (open) next.add(item.group.id);
+                  else next.delete(item.group.id);
                   return next;
                 })
               }

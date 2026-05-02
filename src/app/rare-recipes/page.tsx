@@ -24,7 +24,7 @@ export default async function RecipeManagerIndex() {
       <PageHeader
         title="Rare Recipes & Crafters"
         actions={
-          !!session?.user ? (
+          session?.user ? (
             <Button asChild className="w-full sm:w-auto">
               <Link href="/characters">+ Add recipes to a character</Link>
             </Button>

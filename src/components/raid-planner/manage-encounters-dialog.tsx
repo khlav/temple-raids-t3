@@ -939,7 +939,8 @@ export function ManageEncountersDialog({
   const toggleCollapse = (groupId: string) => {
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
-      next.has(groupId) ? next.delete(groupId) : next.add(groupId);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
       return next;
     });
   };

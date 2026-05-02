@@ -38,11 +38,14 @@ export function CharacterManager() {
 
   // Function to normalize text (remove non-ASCII characters and convert to lowercase)
   const normalizeText = (text: string) => {
-    return text
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Remove accents
-      .replace(/[^\x00-\x7F]/g, "") // Remove non-ASCII characters
-      .toLowerCase(); // Convert to lowercase
+    return (
+      text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remove accents
+        // eslint-disable-next-line no-control-regex
+        .replace(/[^\x00-\x7F]/g, "") // Remove non-ASCII characters
+        .toLowerCase()
+    ); // Convert to lowercase
   };
 
   // Filter characters based on search term
