@@ -17,6 +17,7 @@ export const profile = createTRPCRouter({
         isRaidManager: true,
         isAdmin: true,
         apiToken: true,
+        templarEnabled: true,
       },
       with: {
         character: {
@@ -58,6 +59,7 @@ export const profile = createTRPCRouter({
         isRaidManager: false,
         isAdmin: false,
         hasApiToken: false,
+        templarEnabled: false,
         character: { name: "", characterId: -1, class: "" },
         userCharacterIds: [],
       };
@@ -87,6 +89,7 @@ export const profile = createTRPCRouter({
       ...user,
       apiToken: undefined,
       hasApiToken: user.apiToken !== null,
+      templarEnabled: user.templarEnabled ?? false,
       userCharacterIds: Array.from(userCharacterIds),
     };
   }),
