@@ -294,7 +294,7 @@ Use kebab-case: `feature/add-raid-filtering`
 Format: `type(scope): description`
 
 - Valid types: `feat`, `fix`, `chore`, `refactor`, `hotfix`, `dev`
-- Enforced by the `commit-msg` Husky hook
+- Enforced by the lefthook `commit-msg` hook (`.lefthook/commit-msg/commit-msg.sh`)
 - The `prepare-commit-msg` hook auto-suggests messages from branch name
 
 #### "Ship It" Process
