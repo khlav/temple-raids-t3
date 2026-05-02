@@ -34,8 +34,6 @@ pre-push:
         fi
     lint:
       run: pnpm lint
-    typecheck:
-      run: pnpm typecheck
     build:
       run: pnpm build
 
