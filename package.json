@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "build": "next build",
-    "check": "eslint . --ext .ts,.tsx,.js,.jsx && tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migration:compare": "bash scripts/db/compare-row-counts.sh",
@@ -17,11 +16,11 @@
     "db:studio": "drizzle-kit studio",
     "dev": "next dev --turbo",
     "dev:standard": "next dev",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
-    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
-    "prepare": "husky",
+    "format": "oxfmt --check src/",
+    "format:fix": "oxfmt src/",
+    "lint": "oxlint src/",
+    "lint:fix": "oxlint --fix src/",
+    "prepare": "lefthook install",
     "preview": "next build && next start",
     "start": "next start",
     "test": "vitest run",
@@ -107,20 +106,5 @@
   "packageManager": "pnpm@9.15.1",
   "engines": {
     "node": ">=22.0.0 <23.0.0"
-  },
-  "lint-staged": {
-    "src/**/*.{ts,tsx,js,jsx}": [
-      "eslint --max-warnings=0 --fix",
-      "prettier --write"
-    ],
-    "*.{md,mdx,css,scss,json,yml,yaml}": [
-      "prettier --write"
-    ],
-    "drizzle/**/*.sql": [
-      "echo '📊 Database migration detected - ensure it follows naming conventions'"
-    ],
-    "*.{ts,tsx}": [
-      "bash -c 'if grep -q \"console\\.log\" \"$1\"; then echo \"⚠️  Warning: console.log found in $1\"; fi' --"
-    ]
   }
 }
