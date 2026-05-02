@@ -15,6 +15,10 @@ export async function PATCH(request: Request) {
     if ("error" in authResult) return authResult.error;
     const { user } = authResult;
 
+    if (!user.isRaidManager && !user.isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     let body: unknown;
     try {
       body = await request.json();
@@ -30,25 +34,23 @@ export async function PATCH(request: Request) {
       );
     }
 
-    await db
+    const [u] = await db
       .update(users)
       .set({ templarEnabled: parsed.data.enabled })
-      .where(eq(users.id, user.id));
-
-    const updated = await db
-      .select({
+      .where(eq(users.id, user.id))
+      .returning({
         id: users.id,
         name: users.name,
         image: users.image,
         isRaidManager: users.isRaidManager,
         isAdmin: users.isAdmin,
         templarEnabled: users.templarEnabled,
-      })
-      .from(users)
-      .where(eq(users.id, user.id))
-      .limit(1);
+      });
 
-    const u = updated[0]!;
+    if (!u) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     return NextResponse.json({
       id: u.id,
       name: u.name,
