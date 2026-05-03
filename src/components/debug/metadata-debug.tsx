@@ -28,6 +28,7 @@ export function MetadataDebug({ raidId, characterId }: MetadataDebugProps) {
         setLoading(false);
       })
       .catch((err) => {
+        // eslint-disable-next-line no-console
         console.error("Error fetching metadata:", err);
         setLoading(false);
       });

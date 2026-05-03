@@ -14,6 +14,7 @@
 
 import type { RaidZone } from "./raid-zones";
 import { getInstancesForZone } from "./raid-zones";
+import { logger } from "~/lib/logger";
 
 /**
  * Equipment slot types for items
@@ -99,7 +100,7 @@ async function loadInstanceItems(instance: string): Promise<Record<number, ItemM
     return items;
   } catch (error) {
     // If file doesn't exist, return empty object
-    console.warn(`Failed to load items for instance "${instance}":`, error);
+    logger.warn({ err: error }, `Failed to load items for instance "${instance}"`);
     const empty: Record<number, ItemMapping> = {};
     instanceCache.set(instance, empty);
     return empty;

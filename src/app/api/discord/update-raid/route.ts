@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "~/lib/logger";
 import { db } from "~/server/db";
 import { users, accounts, raidLogs } from "~/server/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     const authHeader = request.headers.get("authorization");
 
     if (!env.TEMPLE_WEB_API_TOKEN) {
-      console.error("TEMPLE_WEB_API_TOKEN environment variable not set");
+      logger.error("TEMPLE_WEB_API_TOKEN environment variable not set");
       const response = await compressResponse({ error: "Server configuration error" }, request);
       return new NextResponse(response.body, {
         status: 500,
@@ -23,11 +24,14 @@ export async function POST(request: Request) {
     }
 
     if (authHeader !== `Bearer ${env.TEMPLE_WEB_API_TOKEN}`) {
-      console.error("Unauthorized API access attempt", {
-        ip: request.headers.get("x-forwarded-for"),
-        userAgent: request.headers.get("user-agent"),
-        timestamp: new Date().toISOString(),
-      });
+      logger.error(
+        {
+          ip: request.headers.get("x-forwarded-for"),
+          userAgent: request.headers.get("user-agent"),
+          timestamp: new Date().toISOString(),
+        },
+        "Unauthorized API access attempt",
+      );
       const response = await compressResponse({ error: "Unauthorized" }, request);
       return new NextResponse(response.body, {
         status: 401,
@@ -300,7 +304,7 @@ export async function POST(request: Request) {
       request,
     );
   } catch (error) {
-    console.error("Error updating raid:", error);
+    logger.error({ err: error }, "Error updating raid");
     const response = await compressResponse(
       { success: false, error: "Internal server error" },
       request,

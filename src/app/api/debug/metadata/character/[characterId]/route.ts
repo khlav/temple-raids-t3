@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { logger } from "~/lib/logger";
 import {
   getCharacterMetadataWithStats,
   generateCharacterMetadata,
@@ -33,7 +34,7 @@ export async function GET(
       metadata,
     });
   } catch (error) {
-    console.error("Error fetching character metadata:", error);
+    logger.error({ err: error }, "Error fetching character metadata");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

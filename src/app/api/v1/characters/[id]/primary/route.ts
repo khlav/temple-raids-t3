@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
+import { logger } from "~/lib/logger";
 import { validateApiToken } from "~/server/api/v1-auth";
 import { db } from "~/server/db";
 import { characters } from "~/server/db/schema";
@@ -46,7 +47,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       name: char.name,
     });
   } catch (error) {
-    console.error("v1 API error:", error);
+    logger.error({ err: error }, "v1 API error");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

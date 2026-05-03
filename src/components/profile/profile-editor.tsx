@@ -88,6 +88,7 @@ export function ProfileEditor({ debug = false }: { debug?: boolean }) {
       if (context?.previousProfile) {
         utils.profile.getMyProfile.setData(undefined, context.previousProfile);
       }
+      // eslint-disable-next-line no-console
       console.error("Failed to save profile", err);
     },
     onSettled: () => {

@@ -40,7 +40,6 @@ export function CreateRaid() {
   });
 
   const handleInitialRaidLog = (initialRaidLog: RaidLog | undefined) => {
-    console.log(initialRaidLog);
     if (initialRaidLog) {
       if (initialRaidLog.raidId) {
         toastRaidLogInUse(toast, initialRaidLog);

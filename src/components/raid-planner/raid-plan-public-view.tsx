@@ -69,6 +69,7 @@ export function RaidPlanPublicView({
       await utils.profile.getMyProfile.invalidate();
     },
     onError: (error) => {
+      // eslint-disable-next-line no-console
       console.error(error);
     },
   });

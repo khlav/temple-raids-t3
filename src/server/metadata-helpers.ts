@@ -1,3 +1,4 @@
+import { logger } from "~/lib/logger";
 import { db } from "~/server/db";
 import {
   raids,
@@ -29,7 +30,7 @@ export async function getRaidMetadata(raidId: number) {
 
     return raidResult[0] || null;
   } catch (error) {
-    console.error("Error fetching raid metadata:", error);
+    logger.error({ err: error }, "Error fetching raid metadata");
     return null;
   }
 }
@@ -127,7 +128,7 @@ export async function getRaidMetadataWithStats(raidId: number) {
       participantClasses: participantClassesResult,
     };
   } catch (error) {
-    console.error("Error fetching raid metadata with stats:", error);
+    logger.error({ err: error }, "Error fetching raid metadata with stats");
     return null;
   }
 }
@@ -147,7 +148,7 @@ export async function getCharacterMetadata(characterId: number) {
 
     return characterResult[0] || null;
   } catch (error) {
-    console.error("Error fetching character metadata:", error);
+    logger.error({ err: error }, "Error fetching character metadata");
     return null;
   }
 }
@@ -282,7 +283,7 @@ export async function getCharacterMetadataWithStats(characterId: number) {
       characterRecipes: characterRecipes,
     };
   } catch (error) {
-    console.error("Error fetching character metadata with stats:", error);
+    logger.error({ err: error }, "Error fetching character metadata with stats");
     return null;
   }
 }
@@ -300,7 +301,7 @@ export async function getRaidBreadcrumbName(raidId: number): Promise<string | nu
 
     return raidResult[0]?.name || null;
   } catch (error) {
-    console.error("Error fetching raid breadcrumb name:", error);
+    logger.error({ err: error }, "Error fetching raid breadcrumb name");
     return null;
   }
 }
@@ -317,7 +318,7 @@ export async function getCharacterBreadcrumbName(characterId: number): Promise<s
 
     return characterResult[0]?.name || null;
   } catch (error) {
-    console.error("Error fetching character breadcrumb name:", error);
+    logger.error({ err: error }, "Error fetching character breadcrumb name");
     return null;
   }
 }

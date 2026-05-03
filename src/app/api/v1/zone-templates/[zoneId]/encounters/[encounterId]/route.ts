@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { logger } from "~/lib/logger";
 import { validateApiToken } from "~/server/api/v1-auth";
 import { slugifyEncounterName } from "~/server/api/helpers/raid-plan-helpers";
 import { db } from "~/server/db";
@@ -92,7 +93,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("v1 API error:", error);
+    logger.error({ err: error }, "v1 API error");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -134,7 +135,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("v1 API error:", error);
+    logger.error({ err: error }, "v1 API error");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@
  */
 
 import { z } from "zod";
+import { logger } from "~/lib/logger";
 import { createTRPCRouter, raidManagerProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import type { SoftResRaidData } from "~/server/api/interfaces/softres";
@@ -106,7 +107,7 @@ export const softres = createTRPCRouter({
               raidDate: softResData.raidDate,
             };
           } catch (error) {
-            console.error(`Failed to fetch raid info for ${link.softResRaidId}:`, error);
+            logger.error({ err: error }, `Failed to fetch raid info for ${link.softResRaidId}`);
             // Return link without enrichment if API call fails
             return link;
           }
@@ -115,7 +116,7 @@ export const softres = createTRPCRouter({
 
       return enrichedLinks;
     } catch (error) {
-      console.error("Failed to fetch SoftRes links from Discord:", error);
+      logger.error({ err: error }, "Failed to fetch SoftRes links from Discord");
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to fetch SoftRes links from Discord",

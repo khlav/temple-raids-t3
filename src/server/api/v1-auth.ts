@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
+import { logger } from "~/lib/logger";
 import { db } from "~/server/db";
 import { users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -23,11 +24,14 @@ export async function validateApiToken(request: Request): Promise<ValidateApiTok
 
   // Check for missing Authorization header
   if (!authHeader) {
-    console.warn("Unauthorized API access attempt (missing header)", {
-      ip: request.headers.get("x-forwarded-for"),
-      userAgent: request.headers.get("user-agent"),
-      timestamp: new Date().toISOString(),
-    });
+    logger.warn(
+      {
+        ip: request.headers.get("x-forwarded-for"),
+        userAgent: request.headers.get("user-agent"),
+        timestamp: new Date().toISOString(),
+      },
+      "Unauthorized API access attempt (missing header)",
+    );
     return {
       error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };
@@ -35,11 +39,14 @@ export async function validateApiToken(request: Request): Promise<ValidateApiTok
 
   // Check for Bearer prefix
   if (!authHeader.startsWith("Bearer ")) {
-    console.warn("Unauthorized API access attempt (invalid format)", {
-      ip: request.headers.get("x-forwarded-for"),
-      userAgent: request.headers.get("user-agent"),
-      timestamp: new Date().toISOString(),
-    });
+    logger.warn(
+      {
+        ip: request.headers.get("x-forwarded-for"),
+        userAgent: request.headers.get("user-agent"),
+        timestamp: new Date().toISOString(),
+      },
+      "Unauthorized API access attempt (invalid format)",
+    );
     return {
       error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };
@@ -50,11 +57,14 @@ export async function validateApiToken(request: Request): Promise<ValidateApiTok
 
   // Reject empty token
   if (!token) {
-    console.warn("Unauthorized API access attempt - empty token", {
-      ip: request.headers.get("x-forwarded-for"),
-      userAgent: request.headers.get("user-agent"),
-      timestamp: new Date().toISOString(),
-    });
+    logger.warn(
+      {
+        ip: request.headers.get("x-forwarded-for"),
+        userAgent: request.headers.get("user-agent"),
+        timestamp: new Date().toISOString(),
+      },
+      "Unauthorized API access attempt - empty token",
+    );
     return {
       error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };
@@ -80,11 +90,14 @@ export async function validateApiToken(request: Request): Promise<ValidateApiTok
 
   // Token not found
   if (result.length === 0) {
-    console.warn("Unauthorized API access attempt (token not found)", {
-      ip: request.headers.get("x-forwarded-for"),
-      userAgent: request.headers.get("user-agent"),
-      timestamp: new Date().toISOString(),
-    });
+    logger.warn(
+      {
+        ip: request.headers.get("x-forwarded-for"),
+        userAgent: request.headers.get("user-agent"),
+        timestamp: new Date().toISOString(),
+      },
+      "Unauthorized API access attempt (token not found)",
+    );
     return {
       error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sql, eq, or, inArray, and, notInArray, isNotNull, desc, aliasedTable } from "drizzle-orm";
+import { logger } from "~/lib/logger";
 import { formatInTimeZone } from "date-fns-tz";
 import { createTRPCRouter, publicProcedure, raidManagerProcedure } from "~/server/api/trpc";
 import { CLASS_SPECS, inferTalentRole } from "~/lib/class-specs";
@@ -271,7 +272,7 @@ export const raidHelperRouter = createTRPCRouter({
               roleCounts = counts;
             }
           } catch (err) {
-            console.error(`Failed to fetch details for event ${e.id}`, err);
+            logger.error({ err }, `Failed to fetch details for event ${e.id}`);
             // Default to 0 counts on error
           }
 

@@ -70,11 +70,9 @@ export function CharacterManagerRow({ character }: { character: RaidParticipant 
     const newCharacterList = { ...localSecondaryCharacters };
     delete newCharacterList[characterId];
     setLocalSecondaryCharacters(newCharacterList);
-    // console.log(localSecondaryCharacters);
   };
 
   const handleAddCharacter = (character: RaidParticipant) => {
-    console.log(character);
     const newCharacterList = {
       ...localSecondaryCharacters,
       [character.characterId]: character,

@@ -49,6 +49,7 @@ export function UrlImportForm({ onEventSelect, onSuccess }: UrlImportFormProps) 
       setUrl(""); // Clear input on success
     } catch (err) {
       setError("Failed to fetch event. Please check the URL and try again.");
+      // eslint-disable-next-line no-console
       console.error("Failed to import:", err);
     } finally {
       setIsLoading(false);

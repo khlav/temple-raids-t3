@@ -37,7 +37,6 @@ export const PostHogIdentify = () => {
         pathname + (newSearchParams.toString() ? `?${newSearchParams.toString()}` : "");
 
       router.replace(newUrl, { scroll: false });
-      console.log(`Welcome, ${session.user.name}!`);
     }
   }, [router, isSignIn, session, sessionLoaded, pathname, searchParams]);
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { gzip } from "zlib";
+import { logger } from "~/lib/logger";
 import { promisify } from "util";
 
 const gzipAsync = promisify(gzip);
@@ -34,7 +35,7 @@ export async function compressResponse(data: unknown, request: Request): Promise
     });
   } catch (error) {
     // If compression fails, fall back to uncompressed
-    console.error("Compression error, falling back to uncompressed:", error);
+    logger.error({ err: error }, "Compression error, falling back to uncompressed");
     return NextResponse.json(data);
   }
 }

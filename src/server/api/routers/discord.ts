@@ -1,3 +1,4 @@
+import { logger } from "~/lib/logger";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { raidLogs, raids } from "~/server/db/schema";
@@ -47,7 +48,7 @@ export const discordRouter = createTRPCRouter({
 
       return logsWithStatus;
     } catch (error) {
-      console.error("Error fetching Discord Warcraft Logs:", error);
+      logger.error({ err: error }, "Error fetching Discord Warcraft Logs");
       throw new Error("Failed to fetch Discord messages");
     }
   }),
@@ -57,7 +58,7 @@ export const discordRouter = createTRPCRouter({
       const channelInfo = await getDiscordChannelInfo();
       return channelInfo;
     } catch (error) {
-      console.error("Error fetching Discord channel info:", error);
+      logger.error({ err: error }, "Error fetching Discord channel info");
       throw new Error("Failed to fetch Discord channel info");
     }
   }),

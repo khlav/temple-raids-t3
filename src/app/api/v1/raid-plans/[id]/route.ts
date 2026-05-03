@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { logger } from "~/lib/logger";
 import { validateApiToken } from "~/server/api/v1-auth";
 import { getSlotNames } from "~/lib/aa-template";
 import { db } from "~/server/db";
@@ -172,7 +173,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       aaSlotAssignments,
     });
   } catch (error) {
-    console.error("v1 API error:", error);
+    logger.error({ err: error }, "v1 API error");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -243,7 +244,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       availableSlots: getSlotNames(updated.defaultAATemplate ?? ""),
     });
   } catch (error) {
-    console.error("v1 API error:", error);
+    logger.error({ err: error }, "v1 API error");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -275,7 +276,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("v1 API error:", error);
+    logger.error({ err: error }, "v1 API error");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

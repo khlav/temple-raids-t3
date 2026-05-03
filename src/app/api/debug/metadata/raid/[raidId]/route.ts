@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { logger } from "~/lib/logger";
 import { getRaidMetadataWithStats, generateRaidMetadata } from "~/server/metadata-helpers";
 import { auth } from "~/server/auth";
 
@@ -30,7 +31,7 @@ export async function GET(
       metadata,
     });
   } catch (error) {
-    console.error("Error fetching raid metadata:", error);
+    logger.error({ err: error }, "Error fetching raid metadata");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
