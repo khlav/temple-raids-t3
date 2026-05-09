@@ -37,6 +37,10 @@ export async function GET(request: Request) {
     }
 
     const normalizedNames = names.map(normalizeForMatch);
+    const nameList = sql.join(
+      normalizedNames.map((n) => sql`${n}`),
+      sql`, `,
+    );
 
     const result = await db
       .select({
@@ -49,7 +53,7 @@ export async function GET(request: Request) {
       .where(
         and(
           eq(characters.isIgnored, false),
-          sql`public.f_unaccent(lower(${characters.name})) = ANY(${normalizedNames}::text[])`,
+          sql`public.f_unaccent(lower(${characters.name})) = ANY(ARRAY[${nameList}])`,
         ),
       )
       .orderBy(characters.name);
