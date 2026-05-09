@@ -321,12 +321,11 @@ registry.registerPath({
   security: [{ BearerToken: [] }],
   request: {
     query: z.object({
-      names: z
-        .string()
-        .openapi({
-          example: "Cowch,Sneakers,Dunckan",
-          description: "Comma-separated character names (max 100)",
-        }),
+      names: z.array(z.string()).openapi({
+        param: { style: "form", explode: false },
+        example: ["Cowch", "Sneakers", "Dunckan"],
+        description: "Comma-separated character names (max 100)",
+      }),
     }),
   },
   responses: {
