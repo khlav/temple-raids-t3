@@ -62,22 +62,23 @@ builder.queryType({
       },
     }),
 
-    /** Family-level attendance (primary + all secondaries aggregated) */
-    characterFamily: t.field({
-      type: CharacterFamilyRef,
-      nullable: true,
+    /** Family-level attendance for multiple primaries */
+    characterFamilies: t.field({
+      type: [CharacterFamilyRef],
       args: {
-        primaryCharacterId: t.arg.int({ required: true }),
+        primaryCharacterIds: t.arg.intList({ required: true }),
       },
       resolve: async (_root, args, ctx) => {
         requireUser(ctx);
-        const result = await ctx.db
+        if (args.primaryCharacterIds.length === 0) return [];
+        const rows = await ctx.db
           .select({ characterId: characters.characterId, isPrimary: characters.isPrimary })
           .from(characters)
-          .where(eq(characters.characterId, args.primaryCharacterId))
-          .limit(1);
-        if (!result[0] || !result[0].isPrimary) return null;
-        return { primaryCharacterId: args.primaryCharacterId };
+          .where(inArray(characters.characterId, args.primaryCharacterIds));
+        const validIds = new Set(rows.filter((r) => r.isPrimary).map((r) => r.characterId));
+        return args.primaryCharacterIds
+          .filter((id) => validIds.has(id))
+          .map((id) => ({ primaryCharacterId: id }));
       },
     }),
 
