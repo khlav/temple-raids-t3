@@ -23,9 +23,6 @@ function buildEmptyReport(weeksBack: number, includeCurrentWeek: boolean): Atten
   const allWeeks = getLockoutWeeks(weeksBack, includeCurrentWeek);
   return {
     weeksBack,
-    weightedAttendance: 0,
-    weightedTotal: 0,
-    weightedAttendancePct: 0,
     weeks: allWeeks.map((w) => ({
       weekStart: w.start.toISOString().split("T")[0]!,
       isCurrentWeek: w.isCurrentWeek,
@@ -94,8 +91,6 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
 
   // 4. Build week-by-zone results
   const zonesToReport = zones && zones.length > 0 ? zones : ALL_GQL_ZONES;
-  let weightedAttendance = 0;
-  let weightedTotal = 0;
   const weekResults: AttendanceWeekData[] = [];
 
   for (const week of allWeeks) {
@@ -112,8 +107,6 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
     }
 
     const zoneResults: ZoneAttendanceData[] = [];
-    let weekWeightedSum = 0;
-    let weekMaxPossible = 0;
 
     for (const gqlZone of zonesToReport) {
       const dbZone = GQL_ZONE_TO_DB[gqlZone];
@@ -121,39 +114,21 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
       const zoneRaids = byDbZone.get(dbZone) ?? [];
       if (zoneRaids.length === 0) continue;
 
-      // Max weight available from this zone this week
-      const maxZoneWeight = Math.max(...zoneRaids.map((r) => r.attendanceWeight));
-      weekMaxPossible += maxZoneWeight;
-
       let status: "ATTENDED" | "BENCH" | "ABSENT" = "ABSENT";
-      let maxWeight = 0;
       const attendedRaids: typeof raidsInRange = [];
 
       for (const raid of zoneRaids) {
         if (attendedRaidIds.has(raid.raidId)) {
           status = "ATTENDED";
-          if (raid.attendanceWeight > maxWeight) maxWeight = raid.attendanceWeight;
           attendedRaids.push(raid);
         } else if (benchRaidIds.has(raid.raidId) && status === "ABSENT") {
           status = "BENCH";
         }
       }
 
-      // BENCH and ABSENT contribute 0 weight, matching the DB view behavior
-      const zoneWeight = status === "ATTENDED" ? maxWeight : 0;
-      weekWeightedSum += zoneWeight;
-
-      zoneResults.push({
-        zone: gqlZone,
-        status,
-        attendanceWeight: zoneWeight,
-        raids: attendedRaids,
-      });
+      zoneResults.push({ zone: gqlZone, status, raids: attendedRaids });
     }
 
-    // Cap weekly sums at 3.0 (matches DB view behavior)
-    weightedAttendance += Math.min(weekWeightedSum, 3.0);
-    weightedTotal += Math.min(weekMaxPossible, 3.0);
     weekResults.push({
       weekStart: weekStartStr,
       isCurrentWeek: week.isCurrentWeek,
@@ -161,11 +136,5 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
     });
   }
 
-  return {
-    weeksBack,
-    weightedAttendance,
-    weightedTotal,
-    weightedAttendancePct: weightedTotal > 0 ? (weightedAttendance / weightedTotal) * 100 : 0,
-    weeks: weekResults,
-  };
+  return { weeksBack, weeks: weekResults };
 }

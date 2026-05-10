@@ -5,9 +5,6 @@ import { RaidZoneEnum, AttendanceStatusEnum, type RaidZoneValues } from "./enums
 AttendanceReportRef.implement({
   fields: (t) => ({
     weeksBack: t.exposeInt("weeksBack"),
-    weightedAttendance: t.exposeFloat("weightedAttendance"),
-    weightedTotal: t.exposeFloat("weightedTotal"),
-    weightedAttendancePct: t.exposeFloat("weightedAttendancePct"),
     weeks: t.field({
       type: [AttendanceWeekRef],
       resolve: (report) => report.weeks,
@@ -36,7 +33,6 @@ ZoneAttendanceRef.implement({
       type: AttendanceStatusEnum,
       resolve: (z) => z.status,
     }),
-    attendanceWeight: t.exposeFloat("attendanceWeight"),
     raids: t.field({
       type: [RaidRef],
       resolve: (z) => z.raids,
