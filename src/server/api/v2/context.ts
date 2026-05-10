@@ -17,6 +17,7 @@ export type AuthUser = {
 
 export type Context = {
   user: AuthUser | null;
+  /** True when authenticated via the bot service token (TEMPLE_WEB_API_TOKEN). */
   isServiceAuth: boolean;
   db: typeof db;
 };
@@ -28,7 +29,9 @@ async function resolveAuth(
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
   if (!token) return { user: null, isServiceAuth: false };
 
-  if (token === env.TEMPLE_WEB_API_TOKEN) return { user: null, isServiceAuth: true };
+  if (token === env.TEMPLE_WEB_API_TOKEN) {
+    return { user: null, isServiceAuth: true };
+  }
 
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const result = await db
@@ -52,7 +55,7 @@ export async function buildContext({ request }: { request: Request }): Promise<C
   return { user, isServiceAuth, db };
 }
 
-/** Throws UNAUTHENTICATED if no valid token was provided. Passes for both user tokens and bot service token. */
+/** Throws UNAUTHENTICATED if neither a valid user token nor the bot service token was provided. */
 export function requireUser(ctx: Context): AuthUser | null {
   if (!ctx.user && !ctx.isServiceAuth) {
     throw new GraphQLError("Not authenticated", {
