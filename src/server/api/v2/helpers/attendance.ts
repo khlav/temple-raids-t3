@@ -24,7 +24,7 @@ function buildEmptyReport(weeksBack: number, includeCurrentWeek: boolean): Atten
   return {
     weeksBack,
     weightedAttendance: 0,
-    weightedTotal: weeksBack * 3,
+    weightedTotal: 0,
     weightedAttendancePct: 0,
     weeks: allWeeks.map((w) => ({
       weekStart: w.start.toISOString().split("T")[0]!,
@@ -95,6 +95,7 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
   // 4. Build week-by-zone results
   const zonesToReport = zones && zones.length > 0 ? zones : ALL_GQL_ZONES;
   let weightedAttendance = 0;
+  let weightedTotal = 0;
   const weekResults: AttendanceWeekData[] = [];
 
   for (const week of allWeeks) {
@@ -112,12 +113,17 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
 
     const zoneResults: ZoneAttendanceData[] = [];
     let weekWeightedSum = 0;
+    let weekMaxPossible = 0;
 
     for (const gqlZone of zonesToReport) {
       const dbZone = GQL_ZONE_TO_DB[gqlZone];
       if (!dbZone) continue;
       const zoneRaids = byDbZone.get(dbZone) ?? [];
       if (zoneRaids.length === 0) continue;
+
+      // Max weight available from this zone this week
+      const maxZoneWeight = Math.max(...zoneRaids.map((r) => r.attendanceWeight));
+      weekMaxPossible += maxZoneWeight;
 
       let status: "ATTENDED" | "BENCH" | "ABSENT" = "ABSENT";
       let maxWeight = 0;
@@ -145,8 +151,9 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
       });
     }
 
-    // Cap weekly sum at 3.0 (matches DB view behavior)
+    // Cap weekly sums at 3.0 (matches DB view behavior)
     weightedAttendance += Math.min(weekWeightedSum, 3.0);
+    weightedTotal += Math.min(weekMaxPossible, 3.0);
     weekResults.push({
       weekStart: weekStartStr,
       isCurrentWeek: week.isCurrentWeek,
@@ -154,7 +161,6 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
     });
   }
 
-  const weightedTotal = weeksBack * 3;
   return {
     weeksBack,
     weightedAttendance,
