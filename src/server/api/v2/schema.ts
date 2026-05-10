@@ -72,11 +72,11 @@ builder.queryType({
       resolve: async (_root, args, ctx) => {
         requireUser(ctx);
         const result = await ctx.db
-          .select({ characterId: characters.characterId })
+          .select({ characterId: characters.characterId, isPrimary: characters.isPrimary })
           .from(characters)
           .where(eq(characters.characterId, args.primaryCharacterId))
           .limit(1);
-        if (!result[0]) return null;
+        if (!result[0] || !result[0].isPrimary) return null;
         return { primaryCharacterId: args.primaryCharacterId };
       },
     }),

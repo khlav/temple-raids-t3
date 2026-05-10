@@ -57,7 +57,7 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
       and(
         gte(raids.date, startDateStr),
         lt(raids.date, endDateStr),
-        dbZones ? inArray(raids.zone, dbZones) : undefined,
+        dbZones && dbZones.length > 0 ? inArray(raids.zone, dbZones) : undefined,
       ),
     );
 
