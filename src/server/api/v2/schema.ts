@@ -1,5 +1,5 @@
 // src/server/api/v2/schema.ts
-import { and, desc, eq, ilike, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, inArray } from "drizzle-orm";
 import { accounts, characters, raids, users } from "~/server/db/schema";
 import { builder } from "./builder";
 import { requireUser } from "./context";
@@ -109,21 +109,23 @@ builder.queryType({
       },
     }),
 
-    /** List raids with optional zone filter, newest first, offset/limit pagination */
+    /** List raids newest-first with optional multi-zone filter and offset/limit pagination */
     raids: t.field({
       type: [RaidRef],
       args: {
-        zone: t.arg({ type: RaidZoneEnum, required: false }),
+        zones: t.arg({ type: [RaidZoneEnum], required: false }),
         limit: t.arg.int({ defaultValue: 50 }),
         offset: t.arg.int({ defaultValue: 0 }),
+        scored: t.arg.boolean({ required: false }),
       },
       resolve: async (_root, args, ctx) => {
         requireUser(ctx);
         const conditions = [];
-        if (args.zone) {
-          const dbZone = GQL_ZONE_TO_DB[args.zone];
-          if (dbZone) conditions.push(eq(raids.zone, dbZone));
+        if (args.zones?.length) {
+          const dbZones = args.zones.map((z) => GQL_ZONE_TO_DB[z]).filter((z): z is string => !!z);
+          if (dbZones.length > 0) conditions.push(inArray(raids.zone, dbZones));
         }
+        if (args.scored === true) conditions.push(gt(raids.attendanceWeight, 0));
         return ctx.db
           .select()
           .from(raids)

@@ -1,7 +1,7 @@
 // src/server/api/v2/types/character.ts
 import { eq } from "drizzle-orm";
 import { characters } from "~/server/db/schema";
-import { CharacterRef, AttendanceReportRef } from "../refs";
+import { CharacterRef, RaidAttendanceRef } from "../refs";
 import { RaidZoneEnum } from "./enums";
 import { requireUser } from "../context";
 import { computeAttendance } from "../helpers/attendance";
@@ -44,11 +44,11 @@ CharacterRef.implement({
       },
     }),
     attendance: t.field({
-      type: AttendanceReportRef,
+      type: [RaidAttendanceRef],
       args: {
         zones: t.arg({ type: [RaidZoneEnum], required: false }),
-        weeksBack: t.arg.int({ defaultValue: 6 }),
-        includeCurrentWeek: t.arg.boolean({ defaultValue: true }),
+        from: t.arg.string({ required: false }),
+        to: t.arg.string({ required: false }),
       },
       resolve: async (c, args, ctx) => {
         requireUser(ctx);
@@ -67,8 +67,8 @@ CharacterRef.implement({
         return computeAttendance({
           characterIds,
           zones: args.zones as string[] | null,
-          weeksBack: args.weeksBack ?? 6,
-          includeCurrentWeek: args.includeCurrentWeek ?? true,
+          from: args.from,
+          to: args.to,
           db: ctx.db,
         });
       },

@@ -2,9 +2,9 @@
 import { builder } from "./builder";
 import type { characters, raids, raidLogs } from "~/server/db/schema";
 import type {
-  AttendanceReportData,
-  AttendanceWeekData,
-  ZoneAttendanceData,
+  RaidAttendanceData,
+  CharacterStatusData,
+  FamilyStatusData,
 } from "./types/attendance-types";
 
 type CharacterRow = typeof characters.$inferSelect;
@@ -23,6 +23,6 @@ export const RaidLogAttendeeRef = builder.objectRef<{
   character: CharacterRow;
   status: string;
 }>("RaidLogAttendee");
-export const AttendanceReportRef = builder.objectRef<AttendanceReportData>("AttendanceReport");
-export const AttendanceWeekRef = builder.objectRef<AttendanceWeekData>("AttendanceWeek");
-export const ZoneAttendanceRef = builder.objectRef<ZoneAttendanceData>("ZoneAttendance");
+export const RaidAttendanceRef = builder.objectRef<RaidAttendanceData>("RaidAttendance");
+export const CharacterStatusRef = builder.objectRef<CharacterStatusData>("CharacterStatus");
+export const FamilyStatusRef = builder.objectRef<FamilyStatusData>("FamilyStatus");

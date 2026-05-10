@@ -1,41 +1,30 @@
 // src/server/api/v2/types/attendance.ts
-import { AttendanceReportRef, AttendanceWeekRef, ZoneAttendanceRef, RaidRef } from "../refs";
-import { RaidZoneEnum, AttendanceStatusEnum, type RaidZoneValues } from "./enums";
+import {
+  RaidAttendanceRef,
+  CharacterStatusRef,
+  FamilyStatusRef,
+  RaidRef,
+  CharacterRef,
+} from "../refs";
+import { AttendanceStatusEnum } from "./enums";
 
-AttendanceReportRef.implement({
+RaidAttendanceRef.implement({
   fields: (t) => ({
-    weeksBack: t.exposeInt("weeksBack"),
-    weeks: t.field({
-      type: [AttendanceWeekRef],
-      resolve: (report) => report.weeks,
-    }),
+    raid: t.field({ type: RaidRef, resolve: (r) => r.raid }),
+    status: t.field({ type: AttendanceStatusEnum, resolve: (r) => r.status }),
   }),
 });
 
-AttendanceWeekRef.implement({
+CharacterStatusRef.implement({
   fields: (t) => ({
-    weekStart: t.exposeString("weekStart"),
-    isCurrentWeek: t.exposeBoolean("isCurrentWeek"),
-    zones: t.field({
-      type: [ZoneAttendanceRef],
-      resolve: (week) => week.zones,
-    }),
+    character: t.field({ type: CharacterRef, resolve: (r) => r.character }),
+    status: t.field({ type: AttendanceStatusEnum, resolve: (r) => r.status }),
   }),
 });
 
-ZoneAttendanceRef.implement({
+FamilyStatusRef.implement({
   fields: (t) => ({
-    zone: t.field({
-      type: RaidZoneEnum,
-      resolve: (z) => z.zone as RaidZoneValues,
-    }),
-    status: t.field({
-      type: AttendanceStatusEnum,
-      resolve: (z) => z.status,
-    }),
-    raids: t.field({
-      type: [RaidRef],
-      resolve: (z) => z.raids,
-    }),
+    status: t.field({ type: AttendanceStatusEnum, resolve: (r) => r.status }),
+    attendees: t.field({ type: [CharacterRef], resolve: (r) => r.attendees }),
   }),
 });
