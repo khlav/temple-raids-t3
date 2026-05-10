@@ -1,4 +1,5 @@
 // src/server/api/v2/helpers/lockout-weeks.ts
+import { getEasternNow } from "~/lib/raid-formatting";
 
 export type LockoutWeek = {
   start: Date; // Tuesday 00:00:00 UTC (inclusive)
@@ -19,7 +20,6 @@ export function getTuesdayAnchoredWeekStart(date: Date): Date {
   const daysToMon = day === 0 ? -6 : 1 - day;
   shifted.setUTCDate(shifted.getUTCDate() + daysToMon);
   shifted.setUTCHours(0, 0, 0, 0);
-  shifted.setUTCMinutes(0, 0, 0);
   // Add 1 day → Tuesday
   shifted.setUTCDate(shifted.getUTCDate() + 1);
   return shifted;
@@ -31,7 +31,7 @@ export function getTuesdayAnchoredWeekStart(date: Date): Date {
  * Oldest week first.
  */
 export function getLockoutWeeks(weeksBack: number, includeCurrentWeek: boolean): LockoutWeek[] {
-  const now = new Date();
+  const now = getEasternNow();
   const currentWeekStart = getTuesdayAnchoredWeekStart(now);
   const weeks: LockoutWeek[] = [];
 

@@ -1,7 +1,5 @@
 // src/server/api/v2/types/attendance-types.ts
-import type { raids } from "~/server/db/schema";
-
-export type RaidRow = typeof raids.$inferSelect;
+import type { RaidRow } from "../refs";
 
 export type ZoneAttendanceData = {
   zone: string; // GQL enum value e.g. "NAXXRAMAS"
