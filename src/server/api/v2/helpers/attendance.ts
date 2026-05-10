@@ -11,6 +11,7 @@ import { getLockoutWeeks } from "./lockout-weeks";
 import { GQL_ZONE_TO_DB, ALL_GQL_ZONES } from "../types/enums";
 
 export type AttendanceArgs = {
+  /** All character IDs treated as a single logical attendee — e.g. primary + all secondaries. Attendance is unified across all IDs. */
   characterIds: number[];
   zones?: string[] | null; // GQL enum values e.g. ["NAXXRAMAS"]
   weeksBack: number;
@@ -132,6 +133,7 @@ export async function computeAttendance(args: AttendanceArgs): Promise<Attendanc
         }
       }
 
+      // BENCH and ABSENT contribute 0 weight, matching the DB view behavior
       const zoneWeight = status === "ATTENDED" ? maxWeight : 0;
       weekWeightedSum += zoneWeight;
 
