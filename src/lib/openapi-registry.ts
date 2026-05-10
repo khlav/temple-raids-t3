@@ -542,11 +542,6 @@ export const EventSignupCharacterSchema = registry.register(
       description: "null for ambiguous matches",
     }),
     primaryCharacterId: z.number().nullable().openapi({ example: null }),
-    attendance: z.object({
-      attendancePct: z.number().openapi({ example: 0.83 }),
-      weeksTracked: z.number().openapi({ example: 6 }),
-      raids: z.array(AttendanceRaidSchema),
-    }),
   }),
 );
 
