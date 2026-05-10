@@ -3,7 +3,7 @@ import { createYoga } from "graphql-yoga";
 import { schema } from "~/server/api/v2/schema";
 import { buildContext } from "~/server/api/v2/context";
 
-const { handleRequest } = createYoga({
+const yoga = createYoga({
   schema,
   context: buildContext,
   graphqlEndpoint: "/api/v2/graphql",
@@ -11,4 +11,9 @@ const { handleRequest } = createYoga({
   fetchAPI: { Response },
 });
 
-export { handleRequest as GET, handleRequest as POST };
+// Wrap yoga instance for Next.js 15 App Router
+async function handler(request: Request): Promise<Response> {
+  return yoga(request);
+}
+
+export { handler as GET, handler as POST };
