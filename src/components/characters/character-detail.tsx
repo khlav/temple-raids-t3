@@ -36,9 +36,9 @@ function CharacterAttendanceContent({
   return (
     <>
       {isIgnored ? (
-        <p className="text-sm text-muted-foreground">
-          Excluded from attendance tracking.
-        </p>
+        <div className="flex h-10 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
+          Excluded from attendance tracking
+        </div>
       ) : (
         <AttendanceProgressBar
           attendancePct={attendancePct}
