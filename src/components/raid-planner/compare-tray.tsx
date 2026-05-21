@@ -4,6 +4,7 @@ import { X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { api } from "~/trpc/react";
 import { ClassIcon } from "~/components/ui/class-icon";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import { useCompareTray, type PinnedCharacter } from "./compare-tray-context";
 import { WOW_CLASSES_SET } from "./constants";
 
@@ -18,13 +19,30 @@ function getLockoutWeekStart(dateStr: string): string {
   return date.toISOString().split("T")[0]!;
 }
 
+function formatWeekLabel(weekStart: string): string {
+  const parts = weekStart.split("-");
+  const date = new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])));
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
 type WeekStatus = "attendee" | "bench" | "absent";
 
-function buildWeekStatus(
-  raids: Array<{ raidId: number; date: string }>,
+interface WeekRaid {
+  name: string;
+  status: WeekStatus;
+}
+
+interface WeekData {
+  week: string;
+  status: WeekStatus;
+  raids: WeekRaid[];
+}
+
+function buildWeekData(
+  raids: Array<{ raidId: number; name: string; date: string }>,
   attendance: Array<{ raidId: number; primaryCharacterId: number; status: string | null }>,
   primaryCharacterId: number,
-): { week: string; status: WeekStatus }[] {
+): WeekData[] {
   const raidWeekMap = new Map<number, string>();
   const weekSet = new Set<string>();
   for (const raid of raids) {
@@ -34,33 +52,82 @@ function buildWeekStatus(
   }
 
   const weekStatusMap = new Map<string, WeekStatus>();
+  const weekRaidsMap = new Map<string, WeekRaid[]>();
   for (const week of weekSet) {
     weekStatusMap.set(week, "absent");
+    weekRaidsMap.set(week, []);
   }
 
+  // Build a lookup of attendance status per raidId for this character
+  const attendanceByRaid = new Map<number, WeekStatus>();
   for (const entry of attendance) {
     if (entry.primaryCharacterId !== primaryCharacterId) continue;
-    const week = raidWeekMap.get(entry.raidId);
-    if (!week) continue;
-    const current = weekStatusMap.get(week);
     const next: WeekStatus = entry.status === "attendee" ? "attendee" : "bench";
-    if (current === "absent" || (current === "bench" && next === "attendee")) {
-      weekStatusMap.set(week, next);
+    attendanceByRaid.set(entry.raidId, next);
+  }
+
+  for (const raid of raids) {
+    const week = raidWeekMap.get(raid.raidId);
+    if (!week) continue;
+    const raidStatus = attendanceByRaid.get(raid.raidId) ?? "absent";
+
+    weekRaidsMap.get(week)!.push({ name: raid.name, status: raidStatus });
+
+    const current = weekStatusMap.get(week)!;
+    if (current === "absent" || (current === "bench" && raidStatus === "attendee")) {
+      weekStatusMap.set(week, raidStatus);
     }
   }
 
-  return Array.from(weekStatusMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([week, status]) => ({ week, status }));
+  return Array.from(weekSet)
+    .sort()
+    .map((week) => ({
+      week,
+      status: weekStatusMap.get(week)!,
+      raids: weekRaidsMap.get(week)!,
+    }));
 }
 
-function AttendanceDot({ status }: { status: WeekStatus }) {
-  const classes = {
+function AttendanceDot({ weekData }: { weekData: WeekData }) {
+  const { week, status, raids } = weekData;
+  const dotClasses = {
     attendee: "bg-emerald-500",
     bench: "bg-amber-400",
     absent: "bg-muted-foreground/20",
   };
-  return <span className={`inline-block h-2.5 w-2.5 rounded-full ${classes[status]}`} />;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={`inline-block h-2.5 w-2.5 cursor-default rounded-full ${dotClasses[status]}`}
+        />
+      </TooltipTrigger>
+      <TooltipContent side="top" className="dark border-none bg-secondary text-muted-foreground">
+        <p className="mb-1 font-semibold text-foreground">Week of {formatWeekLabel(week)}</p>
+        {raids.length === 0 ? (
+          <p className="text-xs">No raids</p>
+        ) : (
+          raids.map((r) => (
+            <p key={r.name} className="text-xs">
+              <span
+                className={
+                  r.status === "attendee"
+                    ? "text-emerald-400"
+                    : r.status === "bench"
+                      ? "text-amber-400"
+                      : "text-muted-foreground/60"
+                }
+              >
+                {r.status === "attendee" ? "✓" : r.status === "bench" ? "~" : "✗"}
+              </span>{" "}
+              {r.name}
+            </p>
+          ))
+        )}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 function CharacterColumn({
@@ -70,11 +137,11 @@ function CharacterColumn({
   onUnpin,
 }: {
   character: PinnedCharacter;
-  raids: Array<{ raidId: number; date: string }>;
+  raids: Array<{ raidId: number; name: string; date: string }>;
   attendance: Array<{ raidId: number; primaryCharacterId: number; status: string | null }>;
   onUnpin: () => void;
 }) {
-  const weeks = buildWeekStatus(raids, attendance, character.primaryCharacterId);
+  const weeks = buildWeekData(raids, attendance, character.primaryCharacterId);
   const attended = weeks.filter((w) => w.status === "attendee").length;
   const benched = weeks.filter((w) => w.status === "bench").length;
   const denominator = weeks.length;
@@ -101,7 +168,7 @@ function CharacterColumn({
       </div>
       <div className="flex items-center gap-1">
         {weeks.length > 0 ? (
-          weeks.map(({ week, status }) => <AttendanceDot key={week} status={status} />)
+          weeks.map((weekData) => <AttendanceDot key={weekData.week} weekData={weekData} />)
         ) : (
           <span className="text-[10px] text-muted-foreground">No data</span>
         )}
@@ -137,39 +204,41 @@ export function CompareTray() {
   const reportUrl = `/reports/attendance?characters=${primaryIds.join(",")}`;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 px-4 py-2 shadow-lg backdrop-blur-sm">
-      <div className="mx-auto flex max-w-screen-xl items-center gap-2">
-        <div className="flex flex-1 items-stretch gap-2">
-          {pinnedCharacters.map((char) => (
-            <CharacterColumn
-              key={char.planCharacterId}
-              character={char}
-              raids={raids}
-              attendance={attendance}
-              onUnpin={() => unpinCharacter(char.planCharacterId)}
-            />
-          ))}
-          {Array.from({ length: 4 - pinnedCharacters.length }).map((_, i) => (
-            <EmptySlot key={i} />
-          ))}
-        </div>
-        <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
-          {isLoading && <span className="text-[10px] text-muted-foreground">Loading…</span>}
-          <Link
-            href={reportUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-[11px] text-primary hover:underline"
-          >
-            Full report
-            <ExternalLink className="h-3 w-3" />
-          </Link>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> attended
-            <span className="ml-1 inline-block h-2 w-2 rounded-full bg-amber-400" /> bench
+    <TooltipProvider>
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 px-4 py-2 shadow-lg backdrop-blur-sm">
+        <div className="mx-auto flex max-w-screen-xl items-center gap-2">
+          <div className="flex flex-1 items-stretch gap-2">
+            {pinnedCharacters.map((char) => (
+              <CharacterColumn
+                key={char.planCharacterId}
+                character={char}
+                raids={raids}
+                attendance={attendance}
+                onUnpin={() => unpinCharacter(char.planCharacterId)}
+              />
+            ))}
+            {Array.from({ length: 4 - pinnedCharacters.length }).map((_, i) => (
+              <EmptySlot key={i} />
+            ))}
+          </div>
+          <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+            {isLoading && <span className="text-[10px] text-muted-foreground">Loading…</span>}
+            <Link
+              href={reportUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+            >
+              Full report
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> attended
+              <span className="ml-1 inline-block h-2 w-2 rounded-full bg-amber-400" /> bench
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
