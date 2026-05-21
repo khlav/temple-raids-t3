@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { api } from "~/trpc/react";
@@ -42,7 +42,9 @@ function getLockoutWeekStart(dateStr: string): string {
 function formatWeekLabel(weekStart: string): string {
   const parts = weekStart.split("-");
   const date = new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])));
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  const m = date.getUTCMonth() + 1;
+  const d = date.getUTCDate();
+  return `${m}/${d}`;
 }
 
 type WeekStatus = "attendee" | "bench" | "absent";
@@ -100,6 +102,7 @@ function buildWeekData(
 
   return Array.from(weekSet)
     .sort()
+    .reverse()
     .map((week) => ({
       week,
       status: weekStatusMap.get(week)!,
@@ -107,45 +110,75 @@ function buildWeekData(
     }));
 }
 
-function AttendanceDot({ weekData }: { weekData: WeekData }) {
-  const { week, status, raids } = weekData;
-  const dotClasses = {
-    attendee: "bg-emerald-500",
-    bench: "bg-amber-400",
-    absent: "bg-muted-foreground/20",
-  };
+const DOT_CLASSES: Record<WeekStatus, string> = {
+  attendee: "bg-emerald-500",
+  bench: "bg-amber-400",
+  absent: "bg-muted-foreground/20",
+};
+
+function AttendanceDot({ status }: { status: WeekStatus }) {
+  return (
+    <span
+      className={`inline-block h-2.5 w-2.5 cursor-default rounded-full ${DOT_CLASSES[status]}`}
+    />
+  );
+}
+
+function WeeksTooltipContent({
+  character,
+  weeks,
+}: {
+  character: PinnedCharacter;
+  weeks: WeekData[];
+}) {
+  const rows = weeks.flatMap((weekData) =>
+    weekData.raids.length === 0
+      ? [
+          {
+            week: weekData.week,
+            symbol: "–",
+            symbolClass: "text-muted-foreground/40",
+            name: "No raids",
+            nameClass: "text-muted-foreground/50",
+          },
+        ]
+      : weekData.raids.map((r) => ({
+          week: weekData.week,
+          symbol: r.status === "attendee" ? "✓" : r.status === "bench" ? "~" : "✗",
+          symbolClass:
+            r.status === "attendee"
+              ? "text-emerald-400"
+              : r.status === "bench"
+                ? "text-amber-400"
+                : "text-muted-foreground/60",
+          name: r.name,
+          nameClass: r.status === "absent" ? "text-muted-foreground/50" : "text-foreground",
+        })),
+  );
+
+  const isWowClass = !!character.characterClass && WOW_CLASSES_SET.has(character.characterClass);
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          className={`inline-block h-2.5 w-2.5 cursor-default rounded-full ${dotClasses[status]}`}
-        />
-      </TooltipTrigger>
-      <TooltipContent side="top" className="dark border-none bg-secondary text-muted-foreground">
-        <p className="mb-1 font-semibold text-foreground">Week of {formatWeekLabel(week)}</p>
-        {raids.length === 0 ? (
-          <p className="text-xs">No raids</p>
-        ) : (
-          raids.map((r) => (
-            <p key={r.name} className="text-xs">
-              <span
-                className={
-                  r.status === "attendee"
-                    ? "text-emerald-400"
-                    : r.status === "bench"
-                      ? "text-amber-400"
-                      : "text-muted-foreground/60"
-                }
-              >
-                {r.status === "attendee" ? "✓" : r.status === "bench" ? "~" : "✗"}
-              </span>{" "}
-              {r.name}
-            </p>
-          ))
+    <div className="max-h-64 overflow-y-auto">
+      <div className="mb-1.5 flex items-center gap-1 text-xs">
+        {isWowClass && character.characterClass && (
+          <ClassIcon characterClass={character.characterClass} px={12} />
         )}
-      </TooltipContent>
-    </Tooltip>
+        <span className="font-bold text-foreground">{character.characterName}</span>
+        <span className="text-muted-foreground">Lockout Wk &amp; Raid</span>
+      </div>
+      <div className="grid grid-cols-[auto_auto_1fr] items-center gap-x-2 gap-y-0.5 text-xs">
+        {rows.map((row, i) => (
+          <Fragment key={i}>
+            <span className="text-muted-foreground whitespace-nowrap">
+              {formatWeekLabel(row.week)}
+            </span>
+            <span className={`text-center ${row.symbolClass}`}>{row.symbol}</span>
+            <span className={row.nameClass}>{row.name}</span>
+          </Fragment>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -168,32 +201,45 @@ function CharacterColumn({
   const isWowClass = !!character.characterClass && WOW_CLASSES_SET.has(character.characterClass);
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1.5 rounded-md border border-border/50 bg-muted/30 p-2">
-      <div className="flex items-center justify-between gap-1">
-        <div className="flex min-w-0 items-center gap-1">
-          {isWowClass && character.characterClass && (
-            <ClassIcon characterClass={character.characterClass} px={12} />
-          )}
-          <span className="truncate text-xs font-medium">{character.characterName}</span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5 rounded-md border border-border/50 bg-muted/30 p-2">
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex min-w-0 items-center gap-1">
+              {isWowClass && character.characterClass && (
+                <ClassIcon characterClass={character.characterClass} px={12} />
+              )}
+              <span className="truncate text-xs font-medium">{character.characterName}</span>
+            </div>
+            <button
+              type="button"
+              onClick={onUnpin}
+              className="flex-shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label={`Remove ${character.characterName} from compare`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
+            {weeks.length > 0 ? (
+              <div className="flex items-center gap-1">
+                {weeks.map((w) => (
+                  <AttendanceDot key={w.week} status={w.status} />
+                ))}
+              </div>
+            ) : (
+              <span className="text-[10px] text-muted-foreground">No data</span>
+            )}
+            {pct !== null && <span className="ml-1 text-[10px] text-muted-foreground">{pct}%</span>}
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={onUnpin}
-          className="flex-shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label={`Remove ${character.characterName} from compare`}
-        >
-          <X className="h-3 w-3" />
-        </button>
-      </div>
-      <div className="flex items-center gap-1">
-        {weeks.length > 0 ? (
-          weeks.map((weekData) => <AttendanceDot key={weekData.week} weekData={weekData} />)
-        ) : (
-          <span className="text-[10px] text-muted-foreground">No data</span>
-        )}
-        {pct !== null && <span className="ml-1 text-[10px] text-muted-foreground">{pct}%</span>}
-      </div>
-    </div>
+      </TooltipTrigger>
+      {weeks.length > 0 && (
+        <TooltipContent side="top" className="dark border-none bg-secondary text-muted-foreground">
+          <WeeksTooltipContent character={character} weeks={weeks} />
+        </TooltipContent>
+      )}
+    </Tooltip>
   );
 }
 
@@ -214,12 +260,12 @@ export function CompareTray({ defaultZone, defaultDay }: CompareTrayProps) {
   const { pinnedCharacters, unpinCharacter } = useCompareTray();
 
   const [selectedZone, setSelectedZone] = useState(defaultZone ?? FALLBACK_ZONE);
-  const [selectedDay, setSelectedDay] = useState(defaultDay ?? "");
+  const [selectedDay, setSelectedDay] = useState(defaultDay ?? "all");
 
   const primaryIds = pinnedCharacters.map((c) => c.primaryCharacterId);
 
   const zones = ALL_ZONE_INSTANCES.includes(selectedZone) ? [selectedZone] : [FALLBACK_ZONE];
-  const daysOfWeek = selectedDay ? [selectedDay] : undefined;
+  const daysOfWeek = selectedDay !== "all" ? [selectedDay] : undefined;
 
   const { data, isLoading } = api.reports.getAttendanceReportData.useQuery(
     { primaryCharacterIds: primaryIds, zones, daysOfWeek },
@@ -231,17 +277,20 @@ export function CompareTray({ defaultZone, defaultDay }: CompareTrayProps) {
   const raids = data?.raids ?? [];
   const attendance = data?.attendance ?? [];
 
-  const raidCountLabel = isLoading ? "…" : `${raids.length} raid${raids.length !== 1 ? "s" : ""}`;
+  const uniqueLockouts = new Set(raids.map((r) => getLockoutWeekStart(String(r.date)))).size;
+  const raidCountLabel = isLoading
+    ? "…"
+    : `${uniqueLockouts} lockout${uniqueLockouts !== 1 ? "s" : ""}`;
 
   const reportParams = new URLSearchParams({
     characters: primaryIds.join(","),
     zones: selectedZone,
-    ...(selectedDay && { days: selectedDay }),
+    ...(selectedDay !== "all" && { days: selectedDay }),
   });
   const reportUrl = `/reports/attendance?${reportParams.toString()}`;
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={0}>
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 shadow-lg backdrop-blur-sm">
         {/* Header row */}
         <div className="flex items-center gap-3 border-b border-border/40 px-4 py-1.5">
@@ -264,7 +313,7 @@ export function CompareTray({ defaultZone, defaultDay }: CompareTrayProps) {
               <SelectValue placeholder="All days" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="" className="text-xs">
+              <SelectItem value="all" className="text-xs">
                 All days
               </SelectItem>
               {DAYS.map((d) => (
@@ -301,7 +350,7 @@ export function CompareTray({ defaultZone, defaultDay }: CompareTrayProps) {
               onUnpin={() => unpinCharacter(char.planCharacterId)}
             />
           ))}
-          {Array.from({ length: 4 - pinnedCharacters.length }).map((_, i) => (
+          {Array.from({ length: 6 - pinnedCharacters.length }).map((_, i) => (
             <EmptySlot key={i} />
           ))}
         </div>

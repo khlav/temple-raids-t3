@@ -25,7 +25,7 @@ export function CompareTrayProvider({ children }: { children: React.ReactNode })
   const pinCharacter = (char: PinnedCharacter) => {
     setPinnedCharacters((prev) => {
       if (prev.some((c) => c.planCharacterId === char.planCharacterId)) return prev;
-      if (prev.length >= 4) return prev;
+      if (prev.length >= 6) return prev;
       return [...prev, char];
     });
   };
