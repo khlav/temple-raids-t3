@@ -876,7 +876,20 @@ export function RaidPlanDetail({ planId, initialBreadcrumbData }: RaidPlanDetail
             );
           }}
         />
-        <CompareTray />
+        <CompareTray
+          defaultZone={plan.zoneId !== CUSTOM_ZONE_ID ? plan.zoneId : undefined}
+          defaultDay={
+            plan.startAt
+              ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+                  plan.startAt.getDay()
+                ]
+              : plan.event?.date
+                ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+                    new Date(plan.event.date + "T12:00:00Z").getUTCDay()
+                  ]
+                : undefined
+          }
+        />
       </div>
     </CompareTrayProvider>
   );
