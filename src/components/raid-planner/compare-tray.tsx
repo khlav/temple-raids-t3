@@ -293,37 +293,39 @@ export function CompareTray({ defaultZone, defaultDay }: CompareTrayProps) {
     <TooltipProvider delayDuration={0}>
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 shadow-lg backdrop-blur-sm">
         {/* Header row */}
-        <div className="flex items-center gap-3 border-b border-border/40 px-4 py-1.5">
-          <span className="text-xs font-semibold text-foreground">Attendance</span>
-          <span className="text-xs text-muted-foreground">Last {raidCountLabel}</span>
-          <Select value={selectedZone} onValueChange={setSelectedZone}>
-            <SelectTrigger className="h-6 w-auto gap-1 border-0 bg-transparent px-1.5 text-xs shadow-none focus:ring-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {RAID_ZONE_CONFIG.map((z) => (
-                <SelectItem key={z.instance} value={z.instance} className="text-xs">
-                  {z.name}
+        <div className="flex flex-col gap-1 border-b border-border/40 px-4 py-1.5 md:flex-row md:items-center md:gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-foreground">Attendance</span>
+            <span className="text-xs text-muted-foreground">Last {raidCountLabel}</span>
+            <Select value={selectedZone} onValueChange={setSelectedZone}>
+              <SelectTrigger className="h-6 w-auto gap-1 border-0 bg-transparent px-1.5 text-xs shadow-none focus:ring-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RAID_ZONE_CONFIG.map((z) => (
+                  <SelectItem key={z.instance} value={z.instance} className="text-xs">
+                    {z.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedDay} onValueChange={setSelectedDay}>
+              <SelectTrigger className="h-6 w-auto gap-1 border-0 bg-transparent px-1.5 text-xs shadow-none focus:ring-0">
+                <SelectValue placeholder="All days" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">
+                  All days
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={selectedDay} onValueChange={setSelectedDay}>
-            <SelectTrigger className="h-6 w-auto gap-1 border-0 bg-transparent px-1.5 text-xs shadow-none focus:ring-0">
-              <SelectValue placeholder="All days" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">
-                All days
-              </SelectItem>
-              {DAYS.map((d) => (
-                <SelectItem key={d.value} value={d.value} className="text-xs">
-                  {d.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="ml-auto flex items-center gap-3">
+                {DAYS.map((d) => (
+                  <SelectItem key={d.value} value={d.value} className="text-xs">
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-3 md:ml-auto">
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> attended
               <span className="ml-1 inline-block h-2 w-2 rounded-full bg-amber-400" /> bench
@@ -340,7 +342,7 @@ export function CompareTray({ defaultZone, defaultDay }: CompareTrayProps) {
           </div>
         </div>
         {/* Character columns */}
-        <div className="mx-auto flex max-w-screen-xl items-stretch gap-2 px-4 py-2">
+        <div className="mx-auto grid max-w-screen-xl grid-cols-3 items-stretch gap-2 px-4 py-2 md:grid-cols-6">
           {pinnedCharacters.map((char) => (
             <CharacterColumn
               key={char.planCharacterId}
