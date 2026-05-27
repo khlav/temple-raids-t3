@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react";
-import { ChevronDown, ChevronRight, ChevronLeft, Flag, GripVertical } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  Flag,
+  GripVertical,
+  HelpCircle,
+} from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -46,6 +53,13 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 import { api } from "~/trpc/react";
+import {
+  EncounterNotesDialog,
+  type EncounterNote,
+} from "~/components/raid-planner/encounter-notes-dialog";
+import { ClassIcon } from "~/components/ui/class-icon";
+import { useSpellIcon, getSpellIconUrl } from "~/hooks/use-spell-icon";
+import { AA_TEXTURE_TAGS, AA_CLASS_ICONS } from "~/lib/aa-formatting";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -61,6 +75,7 @@ interface EncounterItem {
   sortOrder: number;
   groupId: string | null;
   useDefaultGroups?: boolean;
+  notes?: EncounterNote[];
 }
 
 type ItemId = string; // "enc:{uuid}" | "group:{uuid}"
@@ -713,6 +728,7 @@ export function EncounterSidebar({
                       encounterMap={encounterMap}
                       localNames={localNames}
                       readOnly={readOnly}
+                      planId={planId}
                     />
                   );
                 }
@@ -736,6 +752,7 @@ export function EncounterSidebar({
                     assignmentLabelsMap={assignmentLabelsMap}
                     localNames={localNames}
                     readOnly={readOnly}
+                    planId={planId}
                   />
                 );
               })}
@@ -899,6 +916,90 @@ function RenameEditor({
   );
 }
 
+// ── NotePill ──────────────────────────────────────────────────────────────────
+
+function NoteSpellIcon({ spellId, size }: { spellId: number; size: number }) {
+  const spellData = useSpellIcon(spellId);
+  if (spellData.loading) {
+    return (
+      <span className="inline-block rounded-sm bg-muted" style={{ width: size, height: size }} />
+    );
+  }
+  if (spellData.icon) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={getSpellIconUrl(spellData.icon)}
+        alt={`Spell ${spellId}`}
+        width={size}
+        height={size}
+        className="rounded-sm"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return null;
+}
+
+function NotePill({ note }: { note: EncounterNote }) {
+  const iconSize = 12;
+
+  const renderIcon = () => {
+    const { iconRef } = note;
+    if (!iconRef)
+      return (
+        <HelpCircle
+          style={{ width: iconSize, height: iconSize }}
+          className="shrink-0 text-muted-foreground"
+        />
+      );
+
+    if (/^\d+$/.test(iconRef)) {
+      return <NoteSpellIcon spellId={parseInt(iconRef, 10)} size={iconSize} />;
+    }
+
+    const textureName = AA_TEXTURE_TAGS[iconRef];
+    if (textureName) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={getSpellIconUrl(textureName)}
+          alt={iconRef}
+          width={iconSize}
+          height={iconSize}
+          className="rounded-sm"
+          style={{ width: iconSize, height: iconSize }}
+        />
+      );
+    }
+
+    if ((AA_CLASS_ICONS as readonly string[]).includes(iconRef)) {
+      const classForIcon = iconRef === "deathknight" ? "death knight" : iconRef;
+      return (
+        <ClassIcon
+          characterClass={classForIcon}
+          px={iconSize}
+          className="inline-block shrink-0 align-text-bottom"
+        />
+      );
+    }
+
+    return (
+      <HelpCircle
+        style={{ width: iconSize, height: iconSize }}
+        className="shrink-0 text-muted-foreground"
+      />
+    );
+  };
+
+  return (
+    <div className="flex items-center gap-0.5 rounded bg-muted/60 px-1 py-0.5 text-[10px] text-muted-foreground max-w-[120px]">
+      {renderIcon()}
+      {note.text && <span className="truncate">{note.text}</span>}
+    </div>
+  );
+}
+
 // ── SortableEncounterRow ───────────────────────────────────────────────────────
 
 function SortableEncounterRow({
@@ -916,6 +1017,7 @@ function SortableEncounterRow({
   localNames = {},
   indented = false,
   readOnly,
+  planId,
 }: {
   itemId: ItemId;
   enc: EncounterItem;
@@ -931,7 +1033,9 @@ function SortableEncounterRow({
   localNames?: Record<string, string>;
   indented?: boolean;
   readOnly?: boolean;
+  planId: string;
 }) {
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: itemId,
   });
@@ -989,29 +1093,59 @@ function SortableEncounterRow({
     </TooltipProvider>
   );
 
+  const notePills = enc.notes && enc.notes.length > 0 && (
+    <div className="flex flex-wrap gap-1 px-2 pb-1">
+      {[...enc.notes]
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((note) => (
+          <NotePill key={note.id} note={note} />
+        ))}
+    </div>
+  );
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...(!readOnly && !isRenaming ? { ...attributes, ...listeners } : {})}
-      className={cn("flex min-w-0", isDragging && "opacity-50", indented && "pl-3")}
+      className={cn("flex flex-col min-w-0", isDragging && "opacity-50", indented && "pl-3")}
     >
       {readOnly ? (
-        <div className="flex min-w-0 flex-1">{encounterContent}</div>
+        <div className="flex flex-col min-w-0 flex-1">
+          {encounterContent}
+          {notePills}
+        </div>
       ) : (
-        <ContextMenu>
-          <ContextMenuTrigger className="flex min-w-0 flex-1">
-            {encounterContent}
-          </ContextMenuTrigger>
-          <ContextMenuContent className="min-w-[6rem] p-0.5">
-            <ContextMenuItem
-              className="px-2 py-1 text-xs"
-              onSelect={() => onStartRename(itemId, localNames[enc.id] ?? enc.encounterName)}
-            >
-              Rename
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
+        <>
+          <ContextMenu>
+            <ContextMenuTrigger className="flex min-w-0 flex-1">
+              {encounterContent}
+            </ContextMenuTrigger>
+            <ContextMenuContent className="min-w-[6rem] p-0.5">
+              <ContextMenuItem
+                className="px-2 py-1 text-xs"
+                onSelect={() => onStartRename(itemId, localNames[enc.id] ?? enc.encounterName)}
+              >
+                Rename
+              </ContextMenuItem>
+              <ContextMenuItem
+                className="px-2 py-1 text-xs"
+                onSelect={() => setNotesDialogOpen(true)}
+              >
+                Manage Notes
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
+          {notePills}
+          <EncounterNotesDialog
+            encounterId={enc.id}
+            encounterName={localNames[enc.id] ?? enc.encounterName}
+            notes={enc.notes ?? []}
+            open={notesDialogOpen}
+            onOpenChange={setNotesDialogOpen}
+            planId={planId}
+          />
+        </>
       )}
     </div>
   );
@@ -1037,6 +1171,7 @@ function SortableGroupRow({
   encounterMap,
   localNames = {},
   readOnly,
+  planId,
 }: {
   itemId: ItemId;
   group: EncounterGroup;
@@ -1055,6 +1190,7 @@ function SortableGroupRow({
   encounterMap: Map<string, EncounterItem>;
   localNames?: Record<string, string>;
   readOnly?: boolean;
+  planId: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: itemId,
@@ -1159,6 +1295,7 @@ function SortableGroupRow({
                   localNames={localNames}
                   indented
                   readOnly={readOnly}
+                  planId={planId}
                 />
               );
             })}
