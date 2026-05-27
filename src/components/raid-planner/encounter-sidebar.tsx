@@ -455,9 +455,11 @@ export function EncounterSidebar({
         const activeIdx = srcItems.indexOf(activeId);
         if (activeIdx !== -1) {
           if (overId === overContainer) {
-            // Dropped on the container itself (e.g. end of group) — handleDragOver already
-            // moved the item into place; use current state as-is so the mutation still fires.
-            next = prev;
+            // Dropped on the container droppable itself (e.g. thin drop zone below group items).
+            // Always move item to last position — handles both cross-container moves where
+            // handleDragOver already appended it AND within-group reorder to end where it hasn't moved.
+            const without = srcItems.filter((id) => id !== activeId);
+            next = { ...prev, [activeContainer]: [...without, activeId] };
           } else {
             const overIdx = (prev[overContainer] ?? []).indexOf(overId);
             if (overIdx !== -1 && activeIdx !== overIdx) {
