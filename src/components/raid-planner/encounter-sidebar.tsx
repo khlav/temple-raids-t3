@@ -217,6 +217,9 @@ export function EncounterSidebar({
   const [activeId, setActiveId] = useState<string | null>(null);
   const lastOverId = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedToNewContainer = useRef(false);
+  // Snapshot of items at drag start. handleDragEnd computes final positions from this
+  // baseline so that handleDragOver's cross-container appends don't corrupt the result.
+  const dragStartItemsRef = useRef<Items>({});
 
   // ── Rename state ────────────────────────────────────────────────────────────
   const [renamingId, setRenamingId] = useState<string | null>(null); // prefixed ItemId
@@ -384,6 +387,7 @@ export function EncounterSidebar({
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveId(String(active.id));
+    dragStartItemsRef.current = itemsRef.current;
     lastOverId.current = null;
     recentlyMovedToNewContainer.current = false;
   };
@@ -436,58 +440,74 @@ export function EncounterSidebar({
       const activeId = String(active.id);
       const overId = String(over.id);
 
-      // Read current state from ref (stable across renders, not a stale closure)
-      const prev = itemsRef.current;
-      const activeContainer = findContainer(prev, activeId);
-      if (!activeContainer) return;
+      // Use the pre-drag snapshot so that handleDragOver's cross-container appends
+      // don't pollute our final position computation.
+      const original = dragStartItemsRef.current;
+      const originalActiveContainer = findContainer(original, activeId);
+      if (!originalActiveContainer) return;
 
+      // Resolve overContainer from the original snapshot.
+      // If over.id is a group sortable ("group:{uuid}"), map it to the group's container key.
       let overContainer: string;
-      if (overId in prev) {
+      if (overId in original) {
         overContainer = overId;
+      } else if (overId.startsWith("group:")) {
+        overContainer = overId.slice(6); // strip prefix → raw group UUID = container key
       } else {
-        overContainer = findContainer(prev, overId) ?? "root";
+        overContainer = findContainer(original, overId) ?? "root";
       }
 
-      const srcItems = prev[activeContainer] ?? [];
       let next: Items | null = null;
 
-      if (activeContainer === overContainer) {
+      if (originalActiveContainer === overContainer) {
+        // ── Same-container reorder ────────────────────────────────────────────
+        const srcItems = original[originalActiveContainer] ?? [];
         const activeIdx = srcItems.indexOf(activeId);
-        if (activeIdx !== -1) {
-          if (overId === overContainer) {
-            // Dropped on the container droppable itself (e.g. thin drop zone below group items).
-            // Always move item to last position — handles both cross-container moves where
-            // handleDragOver already appended it AND within-group reorder to end where it hasn't moved.
-            const without = srcItems.filter((id) => id !== activeId);
-            next = { ...prev, [activeContainer]: [...without, activeId] };
-          } else {
-            const overIdx = (prev[overContainer] ?? []).indexOf(overId);
-            if (overIdx !== -1 && activeIdx !== overIdx) {
-              next = { ...prev, [activeContainer]: arrayMove(srcItems, activeIdx, overIdx) };
-            }
+        if (activeIdx === -1) return;
+
+        if (overId === overContainer) {
+          // Dropped on the container itself → move to end
+          const without = srcItems.filter((id) => id !== activeId);
+          next = { ...itemsRef.current, [originalActiveContainer]: [...without, activeId] };
+        } else {
+          const overIdx = srcItems.indexOf(overId);
+          if (overIdx !== -1 && activeIdx !== overIdx) {
+            next = {
+              ...itemsRef.current,
+              [originalActiveContainer]: arrayMove(srcItems, activeIdx, overIdx),
+            };
           }
         }
       } else if (!activeId.startsWith("group:")) {
-        const dstItems = prev[overContainer] ?? [];
+        // ── Cross-container move ──────────────────────────────────────────────
+        // Build final state from the original snapshot so insertIdx is relative
+        // to the destination's pre-drag order, not the order after handleDragOver.
+        const srcItems = original[originalActiveContainer] ?? [];
+        const dstItems = original[overContainer] ?? [];
         const activeIdx = srcItems.indexOf(activeId);
-        if (activeIdx !== -1) {
-          let insertIdx = overId === overContainer ? dstItems.length : dstItems.indexOf(overId);
+        if (activeIdx === -1) return;
+
+        let insertIdx: number;
+        if (overId === overContainer || overId.startsWith("group:")) {
+          insertIdx = dstItems.length;
+        } else {
+          insertIdx = dstItems.indexOf(overId);
           if (insertIdx === -1) insertIdx = dstItems.length;
-          next = {
-            ...prev,
-            [activeContainer]: srcItems.filter((id) => id !== activeId),
-            [overContainer]: [
-              ...dstItems.slice(0, insertIdx),
-              activeId,
-              ...dstItems.slice(insertIdx),
-            ],
-          };
         }
+
+        next = {
+          ...itemsRef.current,
+          [originalActiveContainer]: srcItems.filter((id) => id !== activeId),
+          [overContainer]: [
+            ...dstItems.slice(0, insertIdx),
+            activeId,
+            ...dstItems.slice(insertIdx),
+          ],
+        };
       }
 
       if (!next) return;
 
-      // Apply optimistic update immediately — do NOT call mutation inside setState
       setItems(next);
       itemsRef.current = next;
 
