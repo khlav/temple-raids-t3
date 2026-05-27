@@ -1115,12 +1115,12 @@ function SortableGroupRow({
           <div
             ref={setDropRef}
             className={cn(
-              "min-h-[1.25rem] rounded border border-dashed pl-3 text-[10px] leading-5 text-muted-foreground/30 transition-colors",
+              "min-h-[0.625rem] rounded border border-dashed pl-3 text-[10px] leading-[0.625rem] text-muted-foreground/30 transition-colors",
               isOver && "border-primary/40 bg-accent/20 text-muted-foreground/50",
               groupEncs.length > 0 && !isOver && "border-transparent",
             )}
           >
-            {isOver ? "Drop here" : groupEncs.length === 0 ? "Empty group" : ""}
+            {""}
           </div>
         </CollapsibleContent>
       </Collapsible>
