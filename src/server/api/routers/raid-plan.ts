@@ -991,7 +991,7 @@ export const raidPlanRouter = createTRPCRouter({
         .values({ encounterId, iconRef, text, sortOrder })
         .onConflictDoUpdate({
           target: [raidPlanEncounterNotes.encounterId, raidPlanEncounterNotes.sortOrder],
-          set: { iconRef, text: text ?? null },
+          set: { iconRef, text: text ?? null, updatedAt: new Date() },
         })
         .returning();
 
