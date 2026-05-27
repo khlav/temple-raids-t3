@@ -895,7 +895,7 @@ function SortableEncounterRow({
               "relative flex min-w-0 flex-1 items-center justify-between gap-1 rounded-md px-1.5 py-1 text-xs outline-none transition-all",
               enc.useDefaultGroups && "italic text-muted-foreground",
               enc.id === activeTab ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
-              !isRenaming && "cursor-pointer",
+              !isRenaming && (readOnly ? "cursor-pointer" : "cursor-grab"),
             )}
             onClick={() => {
               if (!isRenaming) onTabChange(enc.id);
@@ -941,26 +941,9 @@ function SortableEncounterRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
-        "group/item flex items-center gap-0.5",
-        isDragging && "opacity-50",
-        indented && "pl-3",
-      )}
+      {...(!readOnly && !isRenaming ? { ...attributes, ...listeners } : {})}
+      className={cn("flex min-w-0", isDragging && "opacity-50", indented && "pl-3")}
     >
-      {!readOnly && (
-        <button
-          type="button"
-          className="shrink-0 touch-none cursor-grab p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover/item:opacity-100 hover:text-foreground"
-          onPointerDown={(e) => e.stopPropagation()}
-          {...attributes}
-          {...listeners}
-          tabIndex={-1}
-          aria-label="Drag to reorder"
-        >
-          <GripVertical className="h-3 w-3" />
-        </button>
-      )}
-
       {readOnly ? (
         <div className="flex min-w-0 flex-1">{encounterContent}</div>
       ) : (
@@ -1041,26 +1024,14 @@ function SortableGroupRow({
       {(() => {
         const header = (
           <div
+            {...(!readOnly && !isRenaming ? { ...attributes, ...listeners } : {})}
             className={cn(
               "group/item flex w-full items-center gap-0.5 rounded-md px-1 py-1 text-xs font-medium transition-all hover:bg-accent/50",
+              !readOnly && !isRenaming && "cursor-grab",
               hasActiveChild && "bg-accent/40",
               isOver && "ring-1 ring-primary/40",
             )}
           >
-            {!readOnly && (
-              <button
-                type="button"
-                className="shrink-0 touch-none cursor-grab p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover/item:opacity-100 hover:text-foreground"
-                onPointerDown={(e) => e.stopPropagation()}
-                {...attributes}
-                {...listeners}
-                tabIndex={-1}
-                aria-label="Drag to reorder group"
-              >
-                <GripVertical className="h-3 w-3" />
-              </button>
-            )}
-
             {isRenaming ? (
               <RenameEditor
                 value={renameValue}
