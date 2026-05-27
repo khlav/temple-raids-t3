@@ -679,7 +679,10 @@ export function EncounterSidebar({
                 side="right"
                 className="dark border-none bg-secondary text-muted-foreground"
               >
-                <AssignmentTooltipBody labels={assignmentLabelsMap.get("default") ?? []} />
+                <EncounterTooltipBody
+                  labels={assignmentLabelsMap.get("default") ?? []}
+                  notes={[]}
+                />
               </TooltipContent>
             )}
           </Tooltip>
@@ -872,15 +875,35 @@ export function EncounterSidebar({
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
-function AssignmentTooltipBody({ labels }: { labels: string[] }) {
+function EncounterTooltipBody({ labels, notes }: { labels: string[]; notes: EncounterNote[] }) {
   return (
     <div className="text-xs">
-      <p className="mb-1 font-semibold">Assignments:</p>
-      <ul className="list-disc pl-3">
-        {labels.map((label, i) => (
-          <li key={i}>{label}</li>
-        ))}
-      </ul>
+      {labels.length > 0 && (
+        <>
+          <p className="mb-1 font-semibold">Assignments:</p>
+          <ul className="list-disc pl-3">
+            {labels.map((label, i) => (
+              <li key={i}>{label}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      {labels.length > 0 && notes.length > 0 && <hr className="my-1.5 border-border/40" />}
+      {notes.length > 0 && (
+        <>
+          <p className="mb-1 font-semibold">Notes:</p>
+          <ul className="space-y-0.5">
+            {[...notes]
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((note) => (
+                <li key={note.id} className="flex items-center gap-1">
+                  <NoteRowIcon note={note} size={14} />
+                  {note.text && <span>{note.text}</span>}
+                </li>
+              ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
@@ -922,7 +945,7 @@ function RenameEditor({
   );
 }
 
-// ── NotePill ──────────────────────────────────────────────────────────────────
+// ── NoteRowIcon ───────────────────────────────────────────────────────────────
 
 function NoteSpellIcon({ spellId, size }: { spellId: number; size: number }) {
   const spellData = useSpellIcon(spellId);
@@ -955,77 +978,58 @@ function NoteSpellIcon({ spellId, size }: { spellId: number; size: number }) {
   return null;
 }
 
-function NotePill({ note }: { note: EncounterNote }) {
-  const iconSize = 12;
-
-  const renderIcon = () => {
-    const { iconRef } = note;
-    if (!iconRef)
-      return (
-        <HelpCircle
-          style={{ width: iconSize, height: iconSize }}
-          className="shrink-0 text-muted-foreground"
-        />
-      );
-
-    if (/^\d+$/.test(iconRef)) {
-      return <NoteSpellIcon spellId={parseInt(iconRef, 10)} size={iconSize} />;
-    }
-
-    const textureName = AA_TEXTURE_TAGS[iconRef];
-    if (textureName) {
-      return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={getSpellIconUrl(textureName)}
-          alt={iconRef}
-          width={iconSize}
-          height={iconSize}
-          className="rounded-sm"
-          style={{ width: iconSize, height: iconSize }}
-        />
-      );
-    }
-
-    if ((AA_ABILITY_ICONS as readonly string[]).includes(iconRef)) {
-      return <AAIcon name={iconRef} type="ability" size={iconSize} className="shrink-0" />;
-    }
-
-    if (RAID_MARKER_ALIASES[iconRef]) {
-      return (
-        <AAIcon
-          name={RAID_MARKER_ALIASES[iconRef]}
-          type="marker"
-          size={iconSize}
-          className="shrink-0"
-        />
-      );
-    }
-
-    if ((AA_CLASS_ICONS as readonly string[]).includes(iconRef)) {
-      const classForIcon = iconRef === "deathknight" ? "death knight" : iconRef;
-      return (
-        <ClassIcon
-          characterClass={classForIcon}
-          px={iconSize}
-          className="inline-block shrink-0 align-text-bottom"
-        />
-      );
-    }
-
+function NoteRowIcon({ note, size = 12 }: { note: EncounterNote; size?: number }) {
+  const { iconRef } = note;
+  if (!iconRef)
     return (
       <HelpCircle
-        style={{ width: iconSize, height: iconSize }}
+        style={{ width: size, height: size }}
         className="shrink-0 text-muted-foreground"
       />
     );
-  };
+
+  if (/^\d+$/.test(iconRef)) {
+    return <NoteSpellIcon spellId={parseInt(iconRef, 10)} size={size} />;
+  }
+
+  const textureName = AA_TEXTURE_TAGS[iconRef];
+  if (textureName) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={getSpellIconUrl(textureName)}
+        alt={iconRef}
+        width={size}
+        height={size}
+        className="rounded-sm"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
+  if ((AA_ABILITY_ICONS as readonly string[]).includes(iconRef)) {
+    return <AAIcon name={iconRef} type="ability" size={size} className="shrink-0" />;
+  }
+
+  if (RAID_MARKER_ALIASES[iconRef]) {
+    return (
+      <AAIcon name={RAID_MARKER_ALIASES[iconRef]} type="marker" size={size} className="shrink-0" />
+    );
+  }
+
+  if ((AA_CLASS_ICONS as readonly string[]).includes(iconRef)) {
+    const classForIcon = iconRef === "deathknight" ? "death knight" : iconRef;
+    return (
+      <ClassIcon
+        characterClass={classForIcon}
+        px={size}
+        className="inline-block shrink-0 align-text-bottom"
+      />
+    );
+  }
 
   return (
-    <div className="flex items-center gap-0.5 rounded bg-muted/60 px-1 py-0.5 text-[10px] text-muted-foreground max-w-[120px]">
-      {renderIcon()}
-      {note.text && <span className="truncate">{note.text}</span>}
-    </div>
+    <HelpCircle style={{ width: size, height: size }} className="shrink-0 text-muted-foreground" />
   );
 }
 
@@ -1103,33 +1107,33 @@ function SortableEncounterRow({
                 >
                   {localNames[enc.id] ?? enc.encounterName}
                 </span>
-                {assignmentLabelsMap.has(enc.id) && (
-                  <Flag className="h-3 w-3 shrink-0 text-yellow-500 transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110" />
-                )}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {enc.notes &&
+                    enc.notes.length > 0 &&
+                    [...enc.notes]
+                      .sort((a, b) => a.sortOrder - b.sortOrder)
+                      .map((note) => <NoteRowIcon key={note.id} note={note} />)}
+                  {assignmentLabelsMap.has(enc.id) && (
+                    <Flag className="h-3 w-3 shrink-0 text-yellow-500 transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110" />
+                  )}
+                </div>
               </>
             )}
           </div>
         </TooltipTrigger>
-        {assignmentLabelsMap.has(enc.id) && (
+        {(assignmentLabelsMap.has(enc.id) || (enc.notes && enc.notes.length > 0)) && (
           <TooltipContent
             side="right"
             className="dark border-none bg-secondary text-muted-foreground"
           >
-            <AssignmentTooltipBody labels={assignmentLabelsMap.get(enc.id) ?? []} />
+            <EncounterTooltipBody
+              labels={assignmentLabelsMap.get(enc.id) ?? []}
+              notes={enc.notes ?? []}
+            />
           </TooltipContent>
         )}
       </Tooltip>
     </TooltipProvider>
-  );
-
-  const notePills = enc.notes && enc.notes.length > 0 && (
-    <div className="flex flex-wrap gap-1 px-2 pb-1">
-      {[...enc.notes]
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((note) => (
-          <NotePill key={note.id} note={note} />
-        ))}
-    </div>
   );
 
   return (
@@ -1140,10 +1144,7 @@ function SortableEncounterRow({
       className={cn("flex flex-col min-w-0", isDragging && "opacity-50", indented && "pl-3")}
     >
       {readOnly ? (
-        <div className="flex flex-col min-w-0 flex-1">
-          {encounterContent}
-          {notePills}
-        </div>
+        <div className="flex flex-col min-w-0 flex-1">{encounterContent}</div>
       ) : (
         <>
           <ContextMenu>
@@ -1165,7 +1166,6 @@ function SortableEncounterRow({
               </ContextMenuItem>
             </ContextMenuContent>
           </ContextMenu>
-          {notePills}
           <EncounterNotesDialog
             encounterId={enc.id}
             encounterName={localNames[enc.id] ?? enc.encounterName}

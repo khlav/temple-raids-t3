@@ -660,6 +660,45 @@ export const raidPlanRouter = createTRPCRouter({
         event = eventResult[0] ?? null;
       }
 
+      // Fetch encounter notes for all encounters
+      const allEncounterIds = encounters.map((e) => e.id);
+      const encounterNotes =
+        allEncounterIds.length > 0
+          ? await ctx.db
+              .select({
+                id: raidPlanEncounterNotes.id,
+                encounterId: raidPlanEncounterNotes.encounterId,
+                iconRef: raidPlanEncounterNotes.iconRef,
+                text: raidPlanEncounterNotes.text,
+                sortOrder: raidPlanEncounterNotes.sortOrder,
+              })
+              .from(raidPlanEncounterNotes)
+              .where(inArray(raidPlanEncounterNotes.encounterId, allEncounterIds))
+              .orderBy(raidPlanEncounterNotes.encounterId, raidPlanEncounterNotes.sortOrder)
+          : [];
+
+      // Group notes by encounterId
+      const notesByEncounterId = new Map<
+        string,
+        { id: string; iconRef: string; text: string | null; sortOrder: number }[]
+      >();
+      for (const note of encounterNotes) {
+        const existing = notesByEncounterId.get(note.encounterId) ?? [];
+        existing.push({
+          id: note.id,
+          iconRef: note.iconRef,
+          text: note.text,
+          sortOrder: note.sortOrder,
+        });
+        notesByEncounterId.set(note.encounterId, existing);
+      }
+
+      // Attach notes to encounters
+      const encountersWithNotes = encounters.map((enc) => ({
+        ...enc,
+        notes: notesByEncounterId.get(enc.id) ?? [],
+      }));
+
       const customEncounterIds = encounters.filter((e) => !e.useDefaultGroups).map((e) => e.id);
 
       let encounterAssignments: {
@@ -705,7 +744,7 @@ export const raidPlanRouter = createTRPCRouter({
         event,
         characters: planCharacters,
         encounterGroups,
-        encounters,
+        encounters: encountersWithNotes,
         encounterAssignments,
         aaSlotAssignments,
       };
