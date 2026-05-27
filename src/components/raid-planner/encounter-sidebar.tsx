@@ -440,70 +440,78 @@ export function EncounterSidebar({
       const activeId = String(active.id);
       const overId = String(over.id);
 
-      // Use the pre-drag snapshot so that handleDragOver's cross-container appends
-      // don't pollute our final position computation.
       const original = dragStartItemsRef.current;
+      const current = itemsRef.current;
+
       const originalActiveContainer = findContainer(original, activeId);
       if (!originalActiveContainer) return;
 
-      // Resolve overContainer from the original snapshot.
-      // If over.id is a group sortable ("group:{uuid}"), map it to the group's container key.
-      let overContainer: string;
-      if (overId in original) {
-        overContainer = overId;
-      } else if (overId.startsWith("group:")) {
-        overContainer = overId.slice(6); // strip prefix → raw group UUID = container key
-      } else {
-        overContainer = findContainer(original, overId) ?? "root";
-      }
+      // Where did handleDragOver actually land the item?
+      const currentActiveContainer = findContainer(current, activeId) ?? originalActiveContainer;
 
       let next: Items | null = null;
 
-      if (originalActiveContainer === overContainer) {
-        // ── Same-container reorder ────────────────────────────────────────────
-        const srcItems = original[originalActiveContainer] ?? [];
-        const activeIdx = srcItems.indexOf(activeId);
-        if (activeIdx === -1) return;
-
-        if (overId === overContainer) {
-          // Dropped on the container itself → move to end
-          const without = srcItems.filter((id) => id !== activeId);
-          next = { ...itemsRef.current, [originalActiveContainer]: [...without, activeId] };
+      if (currentActiveContainer !== originalActiveContainer) {
+        // handleDragOver moved the item to a new container and appended it at the end.
+        // Trust that state — don't re-derive from over.id which can resolve to "root"
+        // or a wrong container when the pointer is in whitespace between groups.
+        next = current;
+      } else {
+        // No cross-container move by handleDragOver (same container or fast drag).
+        // Resolve target from over.id using the original snapshot.
+        let overContainer: string;
+        if (overId in original) {
+          overContainer = overId;
+        } else if (overId.startsWith("group:")) {
+          overContainer = overId.slice(6); // "group:{uuid}" → raw UUID = container key
         } else {
-          const overIdx = srcItems.indexOf(overId);
-          if (overIdx !== -1 && activeIdx !== overIdx) {
-            next = {
-              ...itemsRef.current,
-              [originalActiveContainer]: arrayMove(srcItems, activeIdx, overIdx),
-            };
+          overContainer = findContainer(original, overId) ?? "root";
+        }
+
+        if (originalActiveContainer !== overContainer && !activeId.startsWith("group:")) {
+          // Cross-container without handleDragOver firing (fast drag)
+          const srcItems = original[originalActiveContainer] ?? [];
+          const dstItems = original[overContainer] ?? [];
+          const activeIdx = srcItems.indexOf(activeId);
+          if (activeIdx === -1) return;
+
+          let insertIdx: number;
+          if (overId === overContainer || overId.startsWith("group:")) {
+            insertIdx = dstItems.length;
+          } else {
+            insertIdx = dstItems.indexOf(overId);
+            if (insertIdx === -1) insertIdx = dstItems.length;
+          }
+
+          next = {
+            ...current,
+            [originalActiveContainer]: srcItems.filter((id) => id !== activeId),
+            [overContainer]: [
+              ...dstItems.slice(0, insertIdx),
+              activeId,
+              ...dstItems.slice(insertIdx),
+            ],
+          };
+        } else {
+          // Same-container reorder — use original positions for arrayMove
+          const srcItems = original[originalActiveContainer] ?? [];
+          const activeIdx = srcItems.indexOf(activeId);
+          if (activeIdx === -1) return;
+
+          if (overId === overContainer) {
+            // Dropped on the container itself → move to end
+            const without = srcItems.filter((id) => id !== activeId);
+            next = { ...current, [originalActiveContainer]: [...without, activeId] };
+          } else {
+            const overIdx = srcItems.indexOf(overId);
+            if (overIdx !== -1 && activeIdx !== overIdx) {
+              next = {
+                ...current,
+                [originalActiveContainer]: arrayMove(srcItems, activeIdx, overIdx),
+              };
+            }
           }
         }
-      } else if (!activeId.startsWith("group:")) {
-        // ── Cross-container move ──────────────────────────────────────────────
-        // Build final state from the original snapshot so insertIdx is relative
-        // to the destination's pre-drag order, not the order after handleDragOver.
-        const srcItems = original[originalActiveContainer] ?? [];
-        const dstItems = original[overContainer] ?? [];
-        const activeIdx = srcItems.indexOf(activeId);
-        if (activeIdx === -1) return;
-
-        let insertIdx: number;
-        if (overId === overContainer || overId.startsWith("group:")) {
-          insertIdx = dstItems.length;
-        } else {
-          insertIdx = dstItems.indexOf(overId);
-          if (insertIdx === -1) insertIdx = dstItems.length;
-        }
-
-        next = {
-          ...itemsRef.current,
-          [originalActiveContainer]: srcItems.filter((id) => id !== activeId),
-          [overContainer]: [
-            ...dstItems.slice(0, insertIdx),
-            activeId,
-            ...dstItems.slice(insertIdx),
-          ],
-        };
       }
 
       if (!next) return;
