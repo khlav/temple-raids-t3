@@ -453,9 +453,17 @@ export function EncounterSidebar({
 
       if (activeContainer === overContainer) {
         const activeIdx = srcItems.indexOf(activeId);
-        const overIdx = (prev[overContainer] ?? []).indexOf(overId);
-        if (activeIdx !== -1 && overIdx !== -1 && activeIdx !== overIdx) {
-          next = { ...prev, [activeContainer]: arrayMove(srcItems, activeIdx, overIdx) };
+        if (activeIdx !== -1) {
+          if (overId === overContainer) {
+            // Dropped on the container itself (e.g. end of group) — handleDragOver already
+            // moved the item into place; use current state as-is so the mutation still fires.
+            next = prev;
+          } else {
+            const overIdx = (prev[overContainer] ?? []).indexOf(overId);
+            if (overIdx !== -1 && activeIdx !== overIdx) {
+              next = { ...prev, [activeContainer]: arrayMove(srcItems, activeIdx, overIdx) };
+            }
+          }
         }
       } else if (!activeId.startsWith("group:")) {
         const dstItems = prev[overContainer] ?? [];
