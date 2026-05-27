@@ -121,32 +121,34 @@ function resolveIconRef(iconRef: string): {
 // Small icon preview component (handles spell IDs with hooks)
 // ---------------------------------------------------------------------------
 
-function IconPreview({ iconRef, size = 18 }: { iconRef: string; size?: number }) {
-  const isSpell = /^\d+$/.test(iconRef);
-  const spellData = useSpellIcon(isSpell ? parseInt(iconRef, 10) : 0);
+function SpellIconPreview({ spellId, size }: { spellId: number; size: number }) {
+  const spellData = useSpellIcon(spellId);
+  if (spellData.loading) {
+    return (
+      <span className="inline-block rounded-sm bg-muted" style={{ width: size, height: size }} />
+    );
+  }
+  if (spellData.icon) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={getSpellIconUrl(spellData.icon)}
+        alt={`Spell ${spellId}`}
+        width={size}
+        height={size}
+        className="rounded-sm"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return null;
+}
 
+function IconPreview({ iconRef, size = 18 }: { iconRef: string; size?: number }) {
   if (!iconRef) return null;
 
-  if (isSpell) {
-    if (spellData.loading) {
-      return (
-        <span className="inline-block rounded-sm bg-muted" style={{ width: size, height: size }} />
-      );
-    }
-    if (spellData.icon) {
-      return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={getSpellIconUrl(spellData.icon)}
-          alt={`Spell ${iconRef}`}
-          width={size}
-          height={size}
-          className="rounded-sm"
-          style={{ width: size, height: size }}
-        />
-      );
-    }
-    return null;
+  if (/^\d+$/.test(iconRef)) {
+    return <SpellIconPreview spellId={parseInt(iconRef, 10)} size={size} />;
   }
 
   const resolved = resolveIconRef(iconRef);
@@ -290,7 +292,14 @@ function IconPicker({ value, onChange }: IconPickerProps) {
   const hasAliasMatch = filteredOptions.length > 0;
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={true}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSearch("");
+      }}
+      modal={true}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -451,7 +460,8 @@ function NoteRow({
         size="sm"
         className="h-8 shrink-0 px-2 text-xs"
         onClick={onSave}
-        disabled={!state.iconRef || isSaving}
+        aria-label="Save note"
+        disabled={!state.iconRef || isSaving || (!!state.id && !state.dirty)}
       >
         {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
       </Button>
@@ -463,6 +473,7 @@ function NoteRow({
           size="sm"
           className="h-8 shrink-0 px-2 text-xs text-destructive hover:text-destructive"
           onClick={onDelete}
+          aria-label="Delete note"
           disabled={isDeleting}
         >
           {isDeleting ? (
