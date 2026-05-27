@@ -451,6 +451,10 @@ function NoteRow({
         placeholder="Note text…"
         value={state.text}
         onChange={(e) => onChange({ text: e.target.value, dirty: true })}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") onSave();
+        }}
+        onBlur={onSave}
         maxLength={128}
       />
 
@@ -645,7 +649,8 @@ export function EncounterNotesDialog({
         </div>
 
         <p className="text-[11px] text-muted-foreground">
-          Each note requires an icon. Text is optional. Changes save per row.
+          Each note requires an icon — search by alias (e.g. "mc", "tranq") or enter a spell ID
+          number. Text is optional.
         </p>
       </DialogContent>
     </Dialog>
