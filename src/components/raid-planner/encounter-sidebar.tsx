@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react";
-import { ChevronDown, ChevronRight, ChevronLeft, Flag, GripVertical, Check, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronLeft, Flag, GripVertical } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -221,19 +221,25 @@ export function EncounterSidebar({
   // ── Rename state ────────────────────────────────────────────────────────────
   const [renamingId, setRenamingId] = useState<string | null>(null); // prefixed ItemId
   const [renameValue, setRenameValue] = useState("");
+  // Optimistic name overrides keyed by entity UUID (not prefixed). Cleared on server confirm.
+  const [localNames, setLocalNames] = useState<Record<string, string>>({});
 
   // ── Group expand/collapse ───────────────────────────────────────────────────
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     () => new Set(encounterGroups.map((g) => g.id)),
   );
 
-  // Sync items from props whenever encounters/groups change (not during drag)
+  // Sync items from server data when encounters/groups change.
+  // activeId intentionally excluded from deps — we don't want this to fire
+  // when drag ends (setActiveId(null)) because props haven't updated yet at
+  // that point and it would overwrite the optimistic local reorder.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (activeId) return;
+    if (activeId) return; // still skip if somehow a drag is in flight
     const next = buildItems(encounters, encounterGroups);
     setItems(next);
     itemsRef.current = next;
-  }, [encounters, encounterGroups, activeId]);
+  }, [encounters, encounterGroups]);
 
   // Sync expanded groups when new groups are added
   useEffect(() => {
@@ -294,12 +300,34 @@ export function EncounterSidebar({
       cancelRename();
       return;
     }
-    if (parsed.type === "enc") {
-      updateEncounterMutation.mutate({ encounterId: parsed.id, encounterName: trimmed });
-    } else {
-      updateGroupMutation.mutate({ groupId: parsed.id, groupName: trimmed });
-    }
+    const prevName = localNames[parsed.id];
+    // Apply optimistic update immediately
+    setLocalNames((prev) => ({ ...prev, [parsed.id]: trimmed }));
     setRenamingId(null);
+    const revertName = () =>
+      setLocalNames((prev) => {
+        const next = { ...prev };
+        if (prevName !== undefined) next[parsed.id] = prevName;
+        else delete next[parsed.id];
+        return next;
+      });
+    const clearName = () =>
+      setLocalNames((prev) => {
+        const next = { ...prev };
+        delete next[parsed.id];
+        return next;
+      });
+    if (parsed.type === "enc") {
+      updateEncounterMutation.mutate(
+        { encounterId: parsed.id, encounterName: trimmed },
+        { onError: revertName, onSuccess: clearName },
+      );
+    } else {
+      updateGroupMutation.mutate(
+        { groupId: parsed.id, groupName: trimmed },
+        { onError: revertName, onSuccess: clearName },
+      );
+    }
   };
 
   const cancelRename = () => {
@@ -408,68 +436,55 @@ export function EncounterSidebar({
       const activeId = String(active.id);
       const overId = String(over.id);
 
-      setItems((prev) => {
-        const activeContainer = findContainer(prev, activeId);
-        if (!activeContainer) return prev;
+      // Read current state from ref (stable across renders, not a stale closure)
+      const prev = itemsRef.current;
+      const activeContainer = findContainer(prev, activeId);
+      if (!activeContainer) return;
 
-        let overContainer: string;
-        if (overId in prev) {
-          overContainer = overId;
-        } else {
-          overContainer = findContainer(prev, overId) ?? "root";
+      let overContainer: string;
+      if (overId in prev) {
+        overContainer = overId;
+      } else {
+        overContainer = findContainer(prev, overId) ?? "root";
+      }
+
+      const srcItems = prev[activeContainer] ?? [];
+      let next: Items | null = null;
+
+      if (activeContainer === overContainer) {
+        const activeIdx = srcItems.indexOf(activeId);
+        const overIdx = (prev[overContainer] ?? []).indexOf(overId);
+        if (activeIdx !== -1 && overIdx !== -1 && activeIdx !== overIdx) {
+          next = { ...prev, [activeContainer]: arrayMove(srcItems, activeIdx, overIdx) };
         }
-
-        const srcItems = prev[activeContainer] ?? [];
-
-        if (activeContainer === overContainer) {
-          const activeIdx = srcItems.indexOf(activeId);
-          const overIdx = (prev[overContainer] ?? []).indexOf(overId);
-
-          if (activeIdx !== -1 && overIdx !== -1 && activeIdx !== overIdx) {
-            const next = {
-              ...prev,
-              [activeContainer]: arrayMove(srcItems, activeIdx, overIdx),
-            };
-            itemsRef.current = next;
-            if (!readOnly) {
-              const payload = deriveSavePayload(next, encounters, encounterGroups);
-              saveStructureMutation.mutate({ planId, ...payload });
-            }
-            return next;
-          }
-          return prev;
-        }
-
-        if (activeId.startsWith("group:")) return prev;
-
+      } else if (!activeId.startsWith("group:")) {
         const dstItems = prev[overContainer] ?? [];
         const activeIdx = srcItems.indexOf(activeId);
-        if (activeIdx === -1) return prev;
-
-        let insertIdx: number;
-        if (overId === overContainer) {
-          insertIdx = dstItems.length;
-        } else {
-          insertIdx = dstItems.indexOf(overId);
+        if (activeIdx !== -1) {
+          let insertIdx = overId === overContainer ? dstItems.length : dstItems.indexOf(overId);
           if (insertIdx === -1) insertIdx = dstItems.length;
+          next = {
+            ...prev,
+            [activeContainer]: srcItems.filter((id) => id !== activeId),
+            [overContainer]: [
+              ...dstItems.slice(0, insertIdx),
+              activeId,
+              ...dstItems.slice(insertIdx),
+            ],
+          };
         }
+      }
 
-        const next = {
-          ...prev,
-          [activeContainer]: srcItems.filter((id) => id !== activeId),
-          [overContainer]: [
-            ...dstItems.slice(0, insertIdx),
-            activeId,
-            ...dstItems.slice(insertIdx),
-          ],
-        };
-        itemsRef.current = next;
-        if (!readOnly) {
-          const payload = deriveSavePayload(next, encounters, encounterGroups);
-          saveStructureMutation.mutate({ planId, ...payload });
-        }
-        return next;
-      });
+      if (!next) return;
+
+      // Apply optimistic update immediately — do NOT call mutation inside setState
+      setItems(next);
+      itemsRef.current = next;
+
+      if (!readOnly) {
+        const payload = deriveSavePayload(next, encounters, encounterGroups);
+        saveStructureMutation.mutate({ planId, ...payload });
+      }
     },
     [readOnly, encounters, encounterGroups, planId, saveStructureMutation],
   );
@@ -534,10 +549,12 @@ export function EncounterSidebar({
     const parsed = parseItemId(activeId);
     if (!parsed) return "";
     if (parsed.type === "group") {
-      return encounterGroups.find((g) => g.id === parsed.id)?.groupName ?? "";
+      return (
+        localNames[parsed.id] ?? encounterGroups.find((g) => g.id === parsed.id)?.groupName ?? ""
+      );
     }
-    return encounters.find((e) => e.id === parsed.id)?.encounterName ?? "";
-  }, [activeId, encounters, encounterGroups]);
+    return localNames[parsed.id] ?? encounters.find((e) => e.id === parsed.id)?.encounterName ?? "";
+  }, [activeId, encounters, encounterGroups, localNames]);
 
   // ── Encounter map for quick lookups ─────────────────────────────────────────
 
@@ -642,6 +659,7 @@ export function EncounterSidebar({
                       onCancelRename={cancelRename}
                       assignmentLabelsMap={assignmentLabelsMap}
                       encounterMap={encounterMap}
+                      localNames={localNames}
                       readOnly={readOnly}
                     />
                   );
@@ -664,6 +682,7 @@ export function EncounterSidebar({
                     onConfirmRename={confirmRename}
                     onCancelRename={cancelRename}
                     assignmentLabelsMap={assignmentLabelsMap}
+                    localNames={localNames}
                     readOnly={readOnly}
                   />
                 );
@@ -802,38 +821,29 @@ function RenameEditor({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, []);
+
   return (
-    <div
-      className="flex flex-1 items-center gap-0.5"
+    <input
+      ref={inputRef}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onConfirm();
+        if (e.key === "Escape") onCancel();
+      }}
+      onBlur={onConfirm}
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
-    >
-      <input
-        autoFocus
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") onConfirm();
-          if (e.key === "Escape") onCancel();
-        }}
-        className="h-5 min-w-0 flex-1 rounded border border-border bg-background px-1 text-xs outline-none focus:border-primary"
-      />
-      <button
-        type="button"
-        onClick={onConfirm}
-        disabled={!value.trim()}
-        className="shrink-0 rounded p-0.5 text-emerald-500 hover:bg-accent disabled:opacity-40"
-      >
-        <Check className="h-3 w-3" />
-      </button>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </div>
+      className="min-w-0 w-full rounded border border-border bg-background px-1 py-0.5 text-xs outline-none focus:border-primary"
+    />
   );
 }
 
@@ -851,6 +861,7 @@ function SortableEncounterRow({
   onConfirmRename,
   onCancelRename,
   assignmentLabelsMap,
+  localNames = {},
   indented = false,
   readOnly,
 }: {
@@ -865,6 +876,7 @@ function SortableEncounterRow({
   onConfirmRename: () => void;
   onCancelRename: () => void;
   assignmentLabelsMap: Map<string, string[]>;
+  localNames?: Record<string, string>;
   indented?: boolean;
   readOnly?: boolean;
 }) {
@@ -904,7 +916,7 @@ function SortableEncounterRow({
                     assignmentLabelsMap.has(enc.id) && "font-semibold text-yellow-500",
                   )}
                 >
-                  {enc.encounterName}
+                  {localNames[enc.id] ?? enc.encounterName}
                 </span>
                 {assignmentLabelsMap.has(enc.id) && (
                   <Flag className="h-3 w-3 shrink-0 text-yellow-500 transition-transform duration-300 group-hover/item:rotate-12 group-hover/item:scale-110" />
@@ -956,8 +968,11 @@ function SortableEncounterRow({
           <ContextMenuTrigger className="flex min-w-0 flex-1">
             {encounterContent}
           </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem onSelect={() => onStartRename(itemId, enc.encounterName)}>
+          <ContextMenuContent className="min-w-[6rem] p-0.5">
+            <ContextMenuItem
+              className="px-2 py-1 text-xs"
+              onSelect={() => onStartRename(itemId, localNames[enc.id] ?? enc.encounterName)}
+            >
               Rename
             </ContextMenuItem>
           </ContextMenuContent>
@@ -985,6 +1000,7 @@ function SortableGroupRow({
   onCancelRename,
   assignmentLabelsMap,
   encounterMap,
+  localNames = {},
   readOnly,
 }: {
   itemId: ItemId;
@@ -1002,6 +1018,7 @@ function SortableGroupRow({
   onCancelRename: () => void;
   assignmentLabelsMap: Map<string, string[]>;
   encounterMap: Map<string, EncounterItem>;
+  localNames?: Record<string, string>;
   readOnly?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -1053,7 +1070,9 @@ function SortableGroupRow({
               />
             ) : (
               <>
-                <span className="min-w-0 flex-1 truncate">{group.groupName}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  {localNames[group.id] ?? group.groupName}
+                </span>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -1079,8 +1098,11 @@ function SortableGroupRow({
         ) : (
           <ContextMenu>
             <ContextMenuTrigger className="flex w-full">{header}</ContextMenuTrigger>
-            <ContextMenuContent>
-              <ContextMenuItem onSelect={() => onStartRename(itemId, group.groupName)}>
+            <ContextMenuContent className="min-w-[6rem] p-0.5">
+              <ContextMenuItem
+                className="px-2 py-1 text-xs"
+                onSelect={() => onStartRename(itemId, localNames[group.id] ?? group.groupName)}
+              >
                 Rename
               </ContextMenuItem>
             </ContextMenuContent>
@@ -1111,6 +1133,7 @@ function SortableGroupRow({
                   onConfirmRename={onConfirmRename}
                   onCancelRename={onCancelRename}
                   assignmentLabelsMap={assignmentLabelsMap}
+                  localNames={localNames}
                   indented
                   readOnly={readOnly}
                 />
