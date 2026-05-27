@@ -642,8 +642,6 @@ export function EncounterSidebar({
                       onCancelRename={cancelRename}
                       assignmentLabelsMap={assignmentLabelsMap}
                       encounterMap={encounterMap}
-                      activeId={activeId}
-                      items={items}
                       readOnly={readOnly}
                     />
                   );
@@ -987,8 +985,6 @@ function SortableGroupRow({
   onCancelRename,
   assignmentLabelsMap,
   encounterMap,
-  activeId,
-  items,
   readOnly,
 }: {
   itemId: ItemId;
@@ -1006,8 +1002,6 @@ function SortableGroupRow({
   onCancelRename: () => void;
   assignmentLabelsMap: Map<string, string[]>;
   encounterMap: Map<string, EncounterItem>;
-  activeId: string | null;
-  items: Items;
   readOnly?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
