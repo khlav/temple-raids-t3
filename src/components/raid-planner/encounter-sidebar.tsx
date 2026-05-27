@@ -452,10 +452,24 @@ export function EncounterSidebar({
       let next: Items | null = null;
 
       if (currentActiveContainer !== originalActiveContainer) {
-        // handleDragOver moved the item to a new container and appended it at the end.
-        // Trust that state — don't re-derive from over.id which can resolve to "root"
-        // or a wrong container when the pointer is in whitespace between groups.
-        next = current;
+        // handleDragOver moved the item to currentActiveContainer. Use over.id to
+        // determine the insert position within that container, but look it up against
+        // the pre-drag items (original) so the appended-at-end state doesn't corrupt
+        // the index. If over.id isn't one of the original destination items (e.g. it's
+        // the group droppable, group sortable, or whitespace) insert at the end.
+        const srcItems = original[originalActiveContainer] ?? [];
+        const dstItems = original[currentActiveContainer] ?? [];
+        const overInDst = dstItems.indexOf(overId);
+        const insertIdx = overInDst !== -1 ? overInDst : dstItems.length;
+        next = {
+          ...current,
+          [originalActiveContainer]: srcItems.filter((id) => id !== activeId),
+          [currentActiveContainer]: [
+            ...dstItems.slice(0, insertIdx),
+            activeId,
+            ...dstItems.slice(insertIdx),
+          ],
+        };
       } else {
         // No cross-container move by handleDragOver (same container or fast drag).
         // Resolve target from over.id using the original snapshot.
