@@ -58,8 +58,14 @@ import {
   type EncounterNote,
 } from "~/components/raid-planner/encounter-notes-dialog";
 import { ClassIcon } from "~/components/ui/class-icon";
+import { AAIcon } from "~/components/ui/aa-icons";
 import { useSpellIcon, getSpellIconUrl } from "~/hooks/use-spell-icon";
-import { AA_TEXTURE_TAGS, AA_CLASS_ICONS } from "~/lib/aa-formatting";
+import {
+  AA_TEXTURE_TAGS,
+  AA_CLASS_ICONS,
+  AA_ABILITY_ICONS,
+  RAID_MARKER_ALIASES,
+} from "~/lib/aa-formatting";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -938,6 +944,14 @@ function NoteSpellIcon({ spellId, size }: { spellId: number; size: number }) {
       />
     );
   }
+  if (!spellData.loading && !spellData.icon) {
+    return (
+      <HelpCircle
+        style={{ width: size, height: size }}
+        className="shrink-0 text-muted-foreground"
+      />
+    );
+  }
   return null;
 }
 
@@ -969,6 +983,21 @@ function NotePill({ note }: { note: EncounterNote }) {
           height={iconSize}
           className="rounded-sm"
           style={{ width: iconSize, height: iconSize }}
+        />
+      );
+    }
+
+    if ((AA_ABILITY_ICONS as readonly string[]).includes(iconRef)) {
+      return <AAIcon name={iconRef} type="ability" size={iconSize} className="shrink-0" />;
+    }
+
+    if (RAID_MARKER_ALIASES[iconRef]) {
+      return (
+        <AAIcon
+          name={RAID_MARKER_ALIASES[iconRef]}
+          type="marker"
+          size={iconSize}
+          className="shrink-0"
         />
       );
     }
