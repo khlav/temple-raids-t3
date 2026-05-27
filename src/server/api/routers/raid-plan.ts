@@ -975,6 +975,17 @@ export const raidPlanRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { encounterId, sortOrder, iconRef, text } = input;
+
+      // Verify the encounter exists
+      const encounter = await ctx.db
+        .select({ id: raidPlanEncounters.id })
+        .from(raidPlanEncounters)
+        .where(eq(raidPlanEncounters.id, encounterId))
+        .limit(1);
+      if (encounter.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Encounter not found" });
+      }
+
       const result = await ctx.db
         .insert(raidPlanEncounterNotes)
         .values({ encounterId, iconRef, text, sortOrder })
