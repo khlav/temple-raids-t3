@@ -452,6 +452,7 @@ function NoteRow({
         value={state.text}
         onChange={(e) => onChange({ text: e.target.value, dirty: true })}
         onKeyDown={(e) => {
+          e.stopPropagation();
           if (e.key === "Enter") onSave();
         }}
         onBlur={onSave}
@@ -646,7 +647,7 @@ export function EncounterNotesDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" onKeyDown={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle className="text-sm">
             Encounter Notes —{" "}
