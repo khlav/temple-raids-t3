@@ -519,22 +519,38 @@ export function EncounterNotesDialog({
 
   const utils = api.useUtils();
 
-  const invalidate = () => {
-    void utils.raidPlan.getById.invalidate({ planId });
-  };
-
   const upsertMutation = api.raidPlan.upsertEncounterNote.useMutation({
     onSuccess: (result, variables) => {
+      // Patch cache immediately so sidebar updates without waiting for refetch
+      utils.raidPlan.getById.setData({ planId }, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          encounters: old.encounters.map((enc) => {
+            if (enc.id !== encounterId) return enc;
+            const existing = enc.notes ?? [];
+            const without = existing.filter((n) => n.sortOrder !== variables.sortOrder);
+            const updated = [
+              ...without,
+              {
+                id: result.id,
+                iconRef: variables.iconRef,
+                text: variables.text ?? null,
+                sortOrder: variables.sortOrder,
+              },
+            ].sort((a, b) => a.sortOrder - b.sortOrder);
+            return { ...enc, notes: updated };
+          }),
+        };
+      });
+      void utils.raidPlan.getById.invalidate({ planId });
+
       // Update local row state with saved id
       setRows((prev) => {
         const next = [...prev];
         const row = next[variables.sortOrder];
         if (row) {
-          next[variables.sortOrder] = {
-            ...row,
-            id: result.id,
-            dirty: false,
-          };
+          next[variables.sortOrder] = { ...row, id: result.id, dirty: false };
         }
         return next;
       });
@@ -544,7 +560,6 @@ export function EncounterNotesDialog({
         return next;
       });
       setSavingRow(null);
-      invalidate();
     },
     onError: () => {
       setSavingRow(null);
@@ -553,7 +568,21 @@ export function EncounterNotesDialog({
 
   const deleteMutation = api.raidPlan.deleteEncounterNote.useMutation({
     onSuccess: (_, variables) => {
-      // Find which row was deleted
+      // Patch cache immediately
+      utils.raidPlan.getById.setData({ planId }, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          encounters: old.encounters.map((enc) =>
+            enc.id !== encounterId
+              ? enc
+              : { ...enc, notes: (enc.notes ?? []).filter((n) => n.id !== variables.noteId) },
+          ),
+        };
+      });
+      void utils.raidPlan.getById.invalidate({ planId });
+
+      // Update local row state
       const rowIndex = rows.findIndex((r) => r.id === variables.noteId);
       if (rowIndex !== -1) {
         setRows((prev) => {
@@ -568,7 +597,6 @@ export function EncounterNotesDialog({
         });
       }
       setDeletingRow(null);
-      invalidate();
     },
     onError: () => {
       setDeletingRow(null);
